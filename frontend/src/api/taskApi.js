@@ -42,3 +42,10 @@ export const complaintApi = {
     return res;
   }
 };
+
+export const dashboardApi = {
+  getSummary: () => api.get('/dashboard/summary'),
+  getWorkload: (groupBy = 'department') => api.get(`/dashboard/workload?group_by=${groupBy}`),
+  getBottlenecks: () => api.get('/dashboard/bottlenecks'),
+  getDepartments: () => api.get('/dashboard/departments'),
+};

@@ -1,5 +1,5 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import select
 import asyncio
 
@@ -27,8 +27,10 @@ async def rescore_all_tasks():
         stmt = select(Task).filter(Task.status != "done")
         res = await db.execute(stmt)
         tasks = res.scalars().all()
+        total = len(tasks)
+        print(f"[Scheduler] Re-scoring {total} active tasks")
         
-        for task in tasks:
+        for index, task in enumerate(tasks, start=1):
             try:
                 task_data = {
                     "id": task.id,
@@ -46,6 +48,11 @@ async def rescore_all_tasks():
                 task.ai_reasoning = ai_res.get("reasoning", task.ai_reasoning)
             except Exception as e:
                 print(f"[Scheduler] Error re-scoring task {task.id}: {e}")
+
+            # Yield periodically so API requests are not starved while rescoring large datasets.
+            if index % 200 == 0:
+                await db.flush()
+                await asyncio.sleep(0)
                 
         await db.commit()
     print(f"[Scheduler] Finished re-score job.")
@@ -61,9 +68,20 @@ def start_scheduler():
             'interval',
             minutes=15,
             id='rescore_tasks',
-            next_run_time=datetime.now(),
+            next_run_time=datetime.now() + timedelta(minutes=5),
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=120,
         )
-        scheduler.add_job(check_sla_breaches, 'interval', minutes=15, id='check_sla')
+        scheduler.add_job(
+            check_sla_breaches,
+            'interval',
+            minutes=15,
+            id='check_sla',
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=120,
+        )
         scheduler.start()
         print("[Scheduler] AsyncIOScheduler started.")
 

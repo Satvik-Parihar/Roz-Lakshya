@@ -12,7 +12,7 @@ import asyncio
 try:
     from app.services.ai_engine import compute_priority_score, suggest_execution_order
 except ImportError:
-    def compute_priority_score(task):
+    async def compute_priority_score(task):
         return {"score": 50.0, "reasoning": "AI engine not yet available"}
     async def suggest_execution_order(tasks):
         return []
@@ -20,9 +20,9 @@ except ImportError:
 router = APIRouter(prefix="/tasks", tags=["Tasks"], redirect_slashes=False)
 
 def get_priority_label(score: float) -> str:
-    if score > 75:
+    if score >= 70:
         return "High"
-    elif score >= 50:
+    elif score >= 40:
         return "Medium"
     else:
         return "Low"
@@ -60,7 +60,16 @@ async def create_task(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
     db.add(task)
     await db.flush()  # get task.id before commit
 
-    ai_result = compute_priority_score(task)
+    ai_result = await compute_priority_score({
+        "id": task.id,
+        "title": task.title,
+        "deadline_days": task.deadline_days,
+        "effort": task.effort,
+        "impact": task.impact,
+        "workload": task.workload,
+        "complaint_boost": task.complaint_boost,
+        "status": task.status,
+    })
     score = ai_result.get("score", 50.0)
     reasoning = ai_result.get("reasoning", "Score unavailable")
     task.priority_score = score
@@ -137,7 +146,16 @@ async def update_task(task_id: int, payload: TaskUpdate, db: AsyncSession = Depe
 
     scoring_fields = {"deadline_days", "effort", "impact", "workload"}
     if scoring_fields.intersection(update_data.keys()):
-        ai_result = compute_priority_score(task)
+        ai_result = await compute_priority_score({
+            "id": task.id,
+            "title": task.title,
+            "deadline_days": task.deadline_days,
+            "effort": task.effort,
+            "impact": task.impact,
+            "workload": task.workload,
+            "complaint_boost": task.complaint_boost,
+            "status": task.status,
+        })
         score = ai_result.get("score", 50.0)
         reasoning = ai_result.get("reasoning", "Score unavailable")
         task.priority_score = score
@@ -180,7 +198,16 @@ async def get_task_score(task_id: int, db: AsyncSession = Depends(get_db)):
     task = res.scalars().first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    ai_result = compute_priority_score(task)
+    ai_result = await compute_priority_score({
+        "id": task.id,
+        "title": task.title,
+        "deadline_days": task.deadline_days,
+        "effort": task.effort,
+        "impact": task.impact,
+        "workload": task.workload,
+        "complaint_boost": task.complaint_boost,
+        "status": task.status,
+    })
     score = ai_result.get("score", 50.0)
     reasoning = ai_result.get("reasoning", "Score unavailable")
     return {

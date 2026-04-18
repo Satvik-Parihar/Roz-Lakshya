@@ -13,6 +13,11 @@ except Exception:
 _MODEL_PATH = os.path.join(os.path.dirname(__file__), "priority_model.pkl")
 _model = None
 
+# Model was trained on raw CSV target values with observed range near this interval.
+# We normalize predictions to 0-100 so UI and labels align with High/Medium/Low thresholds.
+_MODEL_SCORE_MIN = -2.265517241
+_MODEL_SCORE_MAX = 34.3
+
 
 def _get_model():
     global _model
@@ -157,7 +162,8 @@ async def compute_priority_score(task_data: dict) -> dict:
         complaint_boost = _safe_float(task_data.get("complaint_boost", 0.0), 0.0)
 
         predicted = float(model.predict([[deadline_days, effort, impact, workload]])[0])
-        score = max(0.0, min(100.0, predicted + complaint_boost))
+        normalized = ((predicted - _MODEL_SCORE_MIN) / (_MODEL_SCORE_MAX - _MODEL_SCORE_MIN + 1e-9)) * 100.0
+        score = max(0.0, min(100.0, normalized + complaint_boost))
         reasoning = _priority_reasoning(deadline_days, impact, effort, workload, complaint_boost)
 
         _score_cache[cache_key] = {

@@ -1,5 +1,8 @@
+import uuid
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 
 from app.config import settings
 
@@ -9,9 +12,12 @@ engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.ENVIRONMENT == "development",
     future=True,
+    poolclass=NullPool,
     # HINT: Supabase/PgBouncer doesn't support prepared statements in transaction mode
     connect_args={
+        "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
+        "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4().hex}__",
     }
 )
 
