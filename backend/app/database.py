@@ -9,6 +9,7 @@ engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.ENVIRONMENT == "development",
     future=True,
+    connect_args={"timeout": 10},
 )
 
 # Session factory
