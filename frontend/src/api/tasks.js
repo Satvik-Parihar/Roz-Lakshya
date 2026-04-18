@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 // ─── MOCK DATA (use until backend is live) ──────────────────────────────────
 const MOCK_TASKS = [
@@ -31,14 +31,19 @@ const MOCK_TASKS = [
 ];
 
 // ─── TOGGLE THIS to switch from mock → live ──────────────────────────────────
-const USE_MOCK = true;   // ← Set to false once P1 backend endpoints are live
+const USE_MOCK = false;   // ← Set to false once P1 backend endpoints are live
 
 // ─── API FUNCTIONS ───────────────────────────────────────────────────────────
 export const fetchTasks = async (userId = null) => {
   if (USE_MOCK) return [...MOCK_TASKS];
   const url = userId ? `${BASE_URL}/tasks/my/${userId}` : `${BASE_URL}/tasks`;
   const { data } = await axios.get(url);
-  return data;
+  // Map backend JSON to P3/P4's expected keys
+  return data.map(task => ({
+    ...task,
+    assignee: task.assignee_name || `User ${task.assignee_id}`,
+    reasoning: task.ai_reasoning || task.reasoning
+  }));
 };
 
 export const createTask = async (taskData) => {
@@ -55,8 +60,12 @@ export const createTask = async (taskData) => {
     MOCK_TASKS.push(newTask);
     return newTask;
   }
-  const { data } = await axios.post(`${BASE_URL}/tasks`, taskData);
-  return data;
+  const { data } = await axios.post(`${BASE_URL}/tasks/`, taskData);
+  return {
+    ...data,
+    assignee: data.assignee_name || `User ${data.assignee_id}`,
+    reasoning: data.ai_reasoning || data.reasoning
+  };
 };
 
 export const updateTask = async (id, updates) => {
@@ -66,7 +75,11 @@ export const updateTask = async (id, updates) => {
     return { ...task };
   }
   const { data } = await axios.patch(`${BASE_URL}/tasks/${id}`, updates);
-  return data;
+  return {
+    ...data,
+    assignee: data.assignee_name || `User ${data.assignee_id}`,
+    reasoning: data.ai_reasoning || data.reasoning
+  };
 };
 
 export const deleteTask = async (id) => {
