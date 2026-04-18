@@ -51,7 +51,7 @@ export default function ExecutionSequence() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-50">
             <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-bold text-indigo-600 animate-pulse">Groq LLM is sequencing your tasks...</p>
+            <p className="text-sm font-bold text-indigo-600 animate-pulse">Intelligent engine is sequencing your tasks...</p>
           </div>
         )}
 

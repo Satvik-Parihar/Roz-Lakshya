@@ -48,7 +48,7 @@ export default function ComplaintEngine() {
       <div className="max-w-4xl mx-auto space-y-8">
         <header>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">📢 Complaint Engine</h1>
-          <p className="text-slate-500">Intelligent classification & priority boosting powered by Groq AI</p>
+          <p className="text-slate-500">Intelligent classification & priority boosting powered by priority engine</p>
         </header>
 
         <section className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
