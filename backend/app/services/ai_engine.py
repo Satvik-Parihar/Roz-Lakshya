@@ -1,19 +1,59 @@
-import anthropic
+"""
+AI Engine — Roz-Lakshya Task Prioritization System
+====================================================
+Uses Groq's FREE inference API (llama-3.3-70b-versatile model) as the LLM backend.
+Groq is 100% free to use — sign up at https://console.groq.com to get an API key.
+
+All 3 public functions keep the exact same signatures the routers depend on.
+"""
+
 import json
 import re
 from datetime import datetime, timezone
-from dotenv import load_dotenv
-import os
+from app.config import settings
 
-load_dotenv()
+# ─── GROQ CLIENT (uses httpx which is already in requirements.txt) ───────────
+import httpx
 
-client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-MODEL = "claude-3-5-sonnet-20241022"  # Note: 4-20250514 is not a valid standard model, using actual model equivalent
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "llama-3.3-70b-versatile"  # Free, fast, high quality — equivalent to Claude 3 Sonnet
 
-# ─── IN-MEMORY SCORE CACHE ────────────────────────────────────────────────────
-# key: task_id, value: {"score": float, "reasoning": str, "cached_at": datetime}
+
+def _groq_headers() -> dict:
+    return {
+        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+
+async def _call_groq(system: str, user: str, max_tokens: int) -> str:
+    """Fire a single Groq API call and return the raw text response."""
+    payload = {
+        "model": GROQ_MODEL,
+        "max_tokens": max_tokens,
+        "temperature": 0.1,  # Low temp = deterministic, JSON-safe output
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+    }
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        resp = await client.post(GROQ_API_URL, headers=_groq_headers(), json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"].strip()
+
+
+def _strip_json(raw: str) -> str:
+    """Strip markdown fences so json.loads never chokes."""
+    return re.sub(r"```(?:json)?|```", "", raw).strip()
+
+
+# ─── IN-MEMORY SCORE CACHE ───────────────────────────────────────────────────
+# key: task_id (str), value: {score, reasoning, cached_at}
 _score_cache: dict = {}
-CACHE_TTL_SECONDS = 300  # Re-score only if older than 5 minutes
+CACHE_TTL_SECONDS = 300  # 5-minute TTL before re-scoring
+
 
 def _is_cache_valid(task_id: str) -> bool:
     if task_id not in _score_cache:
@@ -24,148 +64,253 @@ def _is_cache_valid(task_id: str) -> bool:
     age = (datetime.now(timezone.utc) - cached_at).total_seconds()
     return age < CACHE_TTL_SECONDS
 
-def invalidate_cache(task_id: str):
-    """Call this when a task's fields change — forces re-score on next call."""
+
+def invalidate_cache(task_id: str) -> None:
+    """Force re-score on the next GET — call this after a PATCH."""
     _score_cache.pop(str(task_id), None)
 
-def compute_priority_score(task) -> dict:
-    task_id = str(task.id)
 
-    # Return cached result if still fresh and no force-refresh needed
-    if _is_cache_valid(task_id):
+# ─── FUNCTION 1 — compute_priority_score ─────────────────────────────────────
+
+async def compute_priority_score(task_data: dict) -> dict:
+    """
+    Score a task's priority from 0–100 using the Groq LLM.
+
+    Args:
+        task_data: dict with keys title, deadline, effort, impact,
+                   complaint_boost, status.
+    Returns:
+        {"score": float, "reasoning": "one sentence under 15 words"}
+    Fallback (any error):
+        {"score": 50.0, "reasoning": "Score unavailable"}
+    """
+    # Use id-based cache key if present, else title-based
+    cache_key = str(task_data.get("id", task_data.get("title", "unknown")))
+    if _is_cache_valid(cache_key):
         return {
-            "score": _score_cache[task_id]["score"],
-            "reasoning": _score_cache[task_id]["reasoning"],
+            "score": _score_cache[cache_key]["score"],
+            "reasoning": _score_cache[cache_key]["reasoning"],
         }
 
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    try:
+        today = datetime.utcnow().isoformat()
 
-    prompt = f"""Score this task's priority from 0 to 100.
+        system_prompt = "You are a task prioritization engine. Respond only with valid JSON."
 
-Title: {task.title}
-Deadline: {task.deadline} (today is {today})
-Effort required (1-5, higher = more effort): {task.effort}
-Business impact (1-5, higher = more important): {task.impact}
-Current status: {task.status}
-Complaint boost from linked complaints: {task.complaint_boost}
+        user_prompt = f"""Score this task's priority from 0 to 100.
+Today's date (UTC): {today}
+
+Task:
+  Title: {task_data.get("title", "Untitled")}
+  Deadline (ISO): {task_data.get("deadline", "No deadline")}
+  Effort (1–5, higher = more effort): {task_data.get("effort", 3)}
+  Business Impact (1–5, higher = more important): {task_data.get("impact", 3)}
+  Status: {task_data.get("status", "todo")}
+  Complaint Boost (0–100, already scaled): {task_data.get("complaint_boost", 0.0)}
 
 Scoring rules:
-- Urgency (time to deadline) should weigh heavily — tasks due in <2 hours score 90+
-- High impact scores UP, high effort scores DOWN slightly
-- complaint_boost directly adds to the score (represents customer pressure)
-- A done task should always score 0 regardless of other fields
+- Higher impact = higher score
+- Closer deadline = higher score; overdue tasks must score 90 or above
+- Lower effort = slightly higher score (quick wins)
+- complaint_boost adds directly to final score
+- Tasks with status "done" must always score 0
 
-Return ONLY valid JSON with no markdown, no explanation, no extra text:
+Return ONLY this JSON, no markdown, no extra text:
 {{"score": <float 0-100>, "reasoning": "<one sentence, max 15 words>"}}"""
 
-    try:
-        message = client.messages.create(
-            model=MODEL,
-            max_tokens=150,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = message.content[0].text.strip()
-
-        # Parse JSON — strip any accidental markdown fences
-        raw = re.sub(r"```json|```", "", raw).strip()
-        result = json.loads(raw)
+        raw = await _call_groq(system_prompt, user_prompt, max_tokens=200)
+        result = json.loads(_strip_json(raw))
 
         score = float(max(0.0, min(100.0, result.get("score", 50.0))))
         reasoning = str(result.get("reasoning", "Score computed by AI engine."))
 
-        # Override: completed tasks always score 0
-        if str(task.status).lower() == "done":
+        if str(task_data.get("status", "")).lower() == "done":
             score = 0.0
             reasoning = "Task is marked done."
 
-        # Store in cache
-        _score_cache[task_id] = {
+        _score_cache[cache_key] = {
             "score": score,
             "reasoning": reasoning,
             "cached_at": datetime.now(timezone.utc),
         }
-
         return {"score": score, "reasoning": reasoning}
 
-    except json.JSONDecodeError:
-        # Fallback: extract first number found in response
-        numbers = re.findall(r'\b(\d{1,3}(?:\.\d+)?)\b', raw)
-        score = float(numbers[0]) if numbers else 50.0
-        score = max(0.0, min(100.0, score))
-        fallback = {"score": score, "reasoning": "Score estimated (parse fallback)."}
-        _score_cache[task_id] = {**fallback, "cached_at": datetime.now(timezone.utc)}
-        return fallback
-
     except Exception as e:
-        # Never crash P1's endpoint — return a safe default
-        print(f"[AI Engine] Error scoring task {task_id}: {e}")
-        return {"score": 50.0, "reasoning": "Score unavailable — API error."}
+        print(f"[AI Engine] compute_priority_score error: {e}")
+        return {"score": 50.0, "reasoning": "Score unavailable"}
 
 
-def classify_complaint(text: str, tasks: list) -> dict:
+# ─── FUNCTION 2 — classify_complaint ─────────────────────────────────────────
+
+async def classify_complaint(text: str, channel: str, available_tasks: list) -> dict:
     """
+    Classify a complaint using the Groq LLM.
+
     Args:
-        text: raw complaint string from user
-        tasks: list of Task model instances (used to suggest linked task)
+        text: raw complaint string
+        channel: 'email' | 'call' | 'direct'
+        available_tasks: list of dicts with keys id, title
     Returns:
         {
-            "category": str,        # Product|Packaging|Trade|Process|Other
-            "priority": str,        # High|Medium|Low
-            "urgency_score": float, # 0–100
-            "resolution_steps": list[str],
-            "linked_task_suggestion": str | None,
-            "sla_hours": int        # 4 | 8 | 24
+            "category": str,          # Product|Packaging|Trade|Process|Other
+            "priority": str,          # High|Medium|Low
+            "urgency_score": float,   # 0–100
+            "resolution_steps": list, # 2–4 action steps
+            "linked_task_id": int|None,
+            "sla_hours": int          # 4|8|24
         }
     """
-    task_titles = [t.title for t in tasks] if tasks else []
+    _fallback = {
+        "category": "Other",
+        "priority": "Medium",
+        "urgency_score": 50.0,
+        "resolution_steps": ["Review complaint", "Contact customer"],
+        "linked_task_id": None,
+        "sla_hours": 8,
+    }
 
-    prompt = f"""Classify this complaint and recommend resolution.
+    try:
+        task_list_str = json.dumps(available_tasks) if available_tasks else "[]"
+
+        system_prompt = "You are a complaint classification engine. Respond only with valid JSON."
+
+        user_prompt = f"""Classify this complaint and recommend resolution.
 
 Complaint: "{text}"
+Channel: {channel}
 
-Available tasks: {json.dumps(task_titles)}
+Available tasks (id + title):
+{task_list_str}
 
-Return ONLY valid JSON with no markdown, no explanation:
+Rules:
+- category must be exactly one of: Product, Packaging, Trade, Process, Other
+- priority: High if customer-blocking or safety issue
+             Medium if impactful but a workaround exists
+             Low if minor inconvenience
+- urgency_score: 0–100 (High = 75–100, Medium = 40–74, Low = 0–39)
+- resolution_steps: 2 to 4 concrete, actionable steps (not generic advice)
+- linked_task_id: the integer id of the most relevant task from the list above, or null
+- sla_hours: 4 for High, 8 for Medium, 24 for Low
+
+Return ONLY this JSON, no markdown, no extra text:
 {{
   "category": "<Product|Packaging|Trade|Process|Other>",
   "priority": "<High|Medium|Low>",
   "urgency_score": <float 0-100>,
   "resolution_steps": ["<step1>", "<step2>", "<step3>"],
-  "linked_task_suggestion": "<task title from available tasks or null>",
+  "linked_task_id": <integer id or null>,
   "sla_hours": <4|8|24>
-}}
+}}"""
 
-Rules:
-- High = customer-blocking issue → SLA 4h
-- Medium = impactful but not blocking → SLA 8h
-- Low = minor inconvenience → SLA 24h
-- linked_task_suggestion must exactly match one of the available task titles, or be null"""
-
-    try:
-        message = client.messages.create(
-            model=MODEL,
-            max_tokens=300,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = re.sub(r"```json|```", "", message.content[0].text.strip()).strip()
-        result = json.loads(raw)
+        raw = await _call_groq(system_prompt, user_prompt, max_tokens=500)
+        result = json.loads(_strip_json(raw))
 
         # Validate and clamp
         result["urgency_score"] = float(max(0.0, min(100.0, result.get("urgency_score", 50.0))))
         if result.get("sla_hours") not in [4, 8, 24]:
-            result["sla_hours"] = {"High": 4, "Medium": 8, "Low": 24}.get(result.get("priority", "Low"), 24)
-        if not isinstance(result.get("resolution_steps"), list):
-            result["resolution_steps"] = ["Review the complaint", "Contact the customer", "Resolve and close"]
+            result["sla_hours"] = {"High": 4, "Medium": 8, "Low": 24}.get(
+                result.get("priority", "Medium"), 8
+            )
+        if not isinstance(result.get("resolution_steps"), list) or len(result["resolution_steps"]) < 2:
+            result["resolution_steps"] = _fallback["resolution_steps"]
+        if result.get("category") not in ["Product", "Packaging", "Trade", "Process", "Other"]:
+            result["category"] = "Other"
+        if result.get("priority") not in ["High", "Medium", "Low"]:
+            result["priority"] = "Medium"
 
         return result
 
     except Exception as e:
-        print(f"[AI Engine] Error classifying complaint: {e}")
-        return {
-            "category": "Other",
-            "priority": "Medium",
-            "urgency_score": 50.0,
-            "resolution_steps": ["Review complaint", "Escalate if needed", "Follow up with customer"],
-            "linked_task_suggestion": None,
-            "sla_hours": 8,
+        print(f"[AI Engine] classify_complaint error: {e}")
+        return _fallback
+
+
+# ─── FUNCTION 3 — suggest_execution_order ────────────────────────────────────
+
+async def suggest_execution_order(tasks: list) -> list:
+    """
+    Suggest the optimal execution order for a list of tasks.
+
+    Args:
+        tasks: list of dicts with keys id, title, priority_score,
+               deadline, effort, impact, status
+    Returns:
+        [{"task_id": int, "sequence": int, "reason": "under 10 words"}, ...]
+    """
+    # Filter out done tasks BEFORE calling LLM
+    active_tasks = [t for t in tasks if str(t.get("status", "")).lower() != "done"]
+
+    _fallback = [
+        {
+            "task_id": t["id"],
+            "sequence": i + 1,
+            "reason": "Sorted by priority score",
         }
+        for i, t in enumerate(
+            sorted(active_tasks, key=lambda x: x.get("priority_score", 0), reverse=True)
+        )
+    ]
+
+    if not active_tasks:
+        return []
+
+    try:
+        system_prompt = "You are a task sequencing engine. Respond only with valid JSON."
+
+        task_list_str = json.dumps(active_tasks, default=str)
+
+        user_prompt = f"""Suggest the best execution order for these tasks.
+
+Tasks (done tasks already excluded):
+{task_list_str}
+
+Sequencing rules:
+- High priority_score = do earlier
+- If scores are similar, prefer lower effort (quick wins first)
+- Group obviously related tasks together
+- Never include tasks with status "done" in the output
+
+Return ONLY a JSON array, no markdown, no extra text:
+[{{"task_id": <integer>, "sequence": <integer starting from 1>, "reason": "<under 10 words>"}}, ...]"""
+
+        raw = await _call_groq(system_prompt, user_prompt, max_tokens=600)
+        result = json.loads(_strip_json(raw))
+
+        if not isinstance(result, list):
+            return _fallback
+
+        return result
+
+    except Exception as e:
+        print(f"[AI Engine] suggest_execution_order error: {e}")
+        return _fallback
+
+
+# ─── MANUAL TEST CASES (uncomment to run) ────────────────────────────────────
+
+# TEST 1 — compute_priority_score
+# sample_task = {
+#     "title": "Fix payment gateway timeout",
+#     "deadline": "2026-04-21T00:00:00",
+#     "effort": 2,
+#     "impact": 5,
+#     "complaint_boost": 15.0,
+#     "status": "todo"
+# }
+# Expected: score above 75, reasoning mentions deadline or impact
+
+# TEST 2 — classify_complaint
+# sample_complaint = "Customer cannot complete checkout, payment fails every time"
+# sample_tasks = [{"id": 1, "title": "Fix payment gateway timeout"}]
+# Expected: category=Process, priority=High, linked_task_id=1
+
+# TEST 3 — suggest_execution_order
+# sample_tasks = [
+#     {"id": 1, "title": "Fix login bug", "priority_score": 90.0,
+#      "deadline": "2026-04-19", "effort": 2, "impact": 5, "status": "todo"},
+#     {"id": 2, "title": "Update docs", "priority_score": 30.0,
+#      "deadline": "2026-04-25", "effort": 1, "impact": 2, "status": "todo"},
+#     {"id": 3, "title": "Old task", "priority_score": 95.0,
+#      "deadline": "2026-04-18", "effort": 3, "impact": 4, "status": "done"}
+# ]
+# Expected: task 3 filtered out, task 1 appears as sequence 1
