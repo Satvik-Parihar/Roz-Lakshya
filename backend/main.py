@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
 from app.routers import tasks, complaints, dashboard, alerts, users
+from app.services.scheduler import start_scheduler, stop_scheduler
 
 
 logger = logging.getLogger(__name__)
@@ -21,8 +22,12 @@ async def lifespan(app: FastAPI):
         # Keep API bootable for non-DB routes (e.g. auth) when DB is temporarily unavailable.
         app.state.db_ready = False
         logger.warning("Database init failed at startup: %s", exc)
+
+    start_scheduler()
     yield
-    # Shutdown (add cleanup here if needed)
+
+    # Shutdown
+    stop_scheduler()
 
 
 app = FastAPI(

@@ -1,16 +1,22 @@
 from datetime import datetime, timedelta
-import inspect
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import AsyncSessionLocal
-from app.models import Task, Complaint, Alert
+from app.models import Alert, Complaint, Task
 from app.services.ai_engine import compute_priority_score
 
 
 scheduler = AsyncIOScheduler()
+
+
+def _label_for_score(score: float) -> str:
+    if score >= 70:
+        return "High"
+    if score >= 40:
+        return "Medium"
+    return "Low"
 
 
 def _derive_task_deadline(task: Task):
@@ -19,36 +25,15 @@ def _derive_task_deadline(task: Task):
     return None
 
 
-async def _compute_task_priority(task: Task, deadline: datetime | None) -> dict:
-    task_data = {
-        "title": task.title,
-        "deadline": deadline.isoformat() if deadline else None,
-        "effort": task.effort,
-        "impact": task.impact,
-        "complaint_boost": task.complaint_boost,
-        "status": task.status,
-    }
-
-    try:
-        maybe_result = compute_priority_score(task_data)
-        if inspect.isawaitable(maybe_result):
-            return await maybe_result
-        return maybe_result
-    except Exception:
-        maybe_result = compute_priority_score(task)
-        if inspect.isawaitable(maybe_result):
-            return await maybe_result
-        return maybe_result
-
-
 async def check_task_deadlines():
     try:
         async with AsyncSessionLocal() as session:
-            session: AsyncSession
             result = await session.execute(select(Task).where(Task.status != "done"))
             tasks = result.scalars().all()
             now = datetime.utcnow()
             due_soon_cutoff = now + timedelta(hours=2)
+            alerts_created = 0
+            tasks_updated = 0
 
             for task in tasks:
                 deadline = _derive_task_deadline(task)
@@ -71,6 +56,7 @@ async def check_task_deadlines():
                                     is_read=False,
                                 )
                             )
+                            alerts_created += 1
                     elif now <= deadline <= due_soon_cutoff:
                         existing_due_soon = await session.execute(
                             select(Alert).where(
@@ -88,13 +74,38 @@ async def check_task_deadlines():
                                     is_read=False,
                                 )
                             )
+                            alerts_created += 1
 
-                score_result = await _compute_task_priority(task, deadline)
-                task.priority_score = float(score_result.get("score", task.priority_score or 0.0))
-                task.ai_reasoning = score_result.get("reasoning", task.ai_reasoning)
-                task.updated_at = datetime.utcnow()
+                ai_result = await compute_priority_score(
+                    {
+                        "id": task.id,
+                        "title": task.title,
+                        "deadline_days": task.deadline_days,
+                        "effort": task.effort,
+                        "impact": task.impact,
+                        "workload": task.workload,
+                        "complaint_boost": task.complaint_boost,
+                        "status": task.status,
+                    }
+                )
+                existing_score = float(task.priority_score or 0.0)
+                next_score = float(ai_result.get("score", existing_score))
+                next_label = _label_for_score(next_score)
+                next_reasoning = ai_result.get("reasoning", task.ai_reasoning)
 
-            await session.commit()
+                has_score_change = task.priority_score is None or abs(next_score - existing_score) > 1e-6
+                has_label_change = task.priority_label != next_label
+                has_reasoning_change = (task.ai_reasoning or "") != (next_reasoning or "")
+
+                if has_score_change or has_label_change or has_reasoning_change:
+                    task.priority_score = next_score
+                    task.priority_label = next_label
+                    task.ai_reasoning = next_reasoning
+                    task.updated_at = datetime.utcnow()
+                    tasks_updated += 1
+
+            if alerts_created or tasks_updated:
+                await session.commit()
     except Exception as exc:
         print(f"[Scheduler] check_task_deadlines failed: {exc}")
 
@@ -102,7 +113,6 @@ async def check_task_deadlines():
 async def check_sla_breaches():
     try:
         async with AsyncSessionLocal() as session:
-            session: AsyncSession
             result = await session.execute(
                 select(Complaint).where(
                     Complaint.status != "resolved",
@@ -111,6 +121,7 @@ async def check_sla_breaches():
             )
             complaints = result.scalars().all()
             now = datetime.utcnow()
+            alerts_created = 0
 
             for complaint in complaints:
                 if complaint.sla_deadline and complaint.sla_deadline < now:
@@ -133,20 +144,24 @@ async def check_sla_breaches():
                                 is_read=False,
                             )
                         )
+                        alerts_created += 1
 
-            await session.commit()
+            if alerts_created:
+                await session.commit()
     except Exception as exc:
         print(f"[Scheduler] check_sla_breaches failed: {exc}")
 
 
 def start_scheduler():
+    if scheduler.running:
+        return
+
     scheduler.add_job(
         check_task_deadlines,
         "interval",
         minutes=15,
         id="deadline_check",
         replace_existing=True,
-        next_run_time=datetime.utcnow(),
     )
     scheduler.add_job(
         check_sla_breaches,
@@ -155,8 +170,8 @@ def start_scheduler():
         id="sla_check",
         replace_existing=True,
     )
-    if not scheduler.running:
-        scheduler.start()
+    scheduler.start()
+    print("[Scheduler] AsyncIOScheduler started.")
 
 
 def stop_scheduler():
