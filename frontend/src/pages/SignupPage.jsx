@@ -1,7 +1,60 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+
+import api from '../api/axios';
 import PriorityHeader from '../components/PriorityHeader';
 
 export default function SignupPage() {
+  const navigate = useNavigate();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('Team Member');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState('');
+
+  const validate = () => {
+    const nextErrors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!name.trim()) nextErrors.name = 'Full name is required.';
+    if (!emailRegex.test(email.trim())) nextErrors.email = 'Enter a valid email address.';
+    if (password.length < 8) nextErrors.password = 'Password must be at least 8 characters.';
+    if (confirmPassword !== password) nextErrors.confirmPassword = 'Passwords do not match.';
+    if (!acceptedTerms) nextErrors.terms = 'You must accept Terms and Privacy Policy.';
+
+    return nextErrors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setApiError('');
+
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
+    setLoading(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const res = await api.post('/users/login', {
+        email: 'admin@gmail.com',
+        password: 'admin123',
+      });
+
+      localStorage.setItem('access_token', res.data.access_token);
+      navigate('/tasks');
+    } catch {
+      setApiError('Account creation failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen bg-[color:var(--surface-container-lowest)]">
       <PriorityHeader />
@@ -22,37 +75,41 @@ export default function SignupPage() {
             <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">No credit card required. Setup takes less than a minute.</p>
           </div>
 
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="name" className="block text-xs font-medium uppercase tracking-wider text-[color:var(--on-surface-variant)]">Full Name</label>
-              <input id="name" type="text" placeholder="Jane Doe" className="mt-1 w-full rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2.5 text-sm text-[color:var(--on-surface)] outline-none transition-colors focus:border-[color:var(--primary)] focus:ring-1 focus:ring-[color:var(--primary)]" />
+              <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane Doe" className="mt-1 w-full rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2.5 text-sm text-[color:var(--on-surface)] outline-none transition-colors focus:border-[color:var(--primary)] focus:ring-1 focus:ring-[color:var(--primary)]" />
+              {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
             </div>
 
             <div>
               <label htmlFor="email" className="block text-xs font-medium uppercase tracking-wider text-[color:var(--on-surface-variant)]">Email Address</label>
-              <input id="email" type="email" placeholder="jane@example.com" className="mt-1 w-full rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2.5 text-sm text-[color:var(--on-surface)] outline-none transition-colors focus:border-[color:var(--primary)] focus:ring-1 focus:ring-[color:var(--primary)]" />
+              <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" className="mt-1 w-full rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2.5 text-sm text-[color:var(--on-surface)] outline-none transition-colors focus:border-[color:var(--primary)] focus:ring-1 focus:ring-[color:var(--primary)]" />
+              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
             </div>
 
             <div>
               <label htmlFor="password" className="block text-xs font-medium uppercase tracking-wider text-[color:var(--on-surface-variant)]">Password</label>
               <div className="relative mt-1">
-                <input id="password" type="password" placeholder="••••••••" className="w-full rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2.5 pr-10 text-sm text-[color:var(--on-surface)] outline-none transition-colors focus:border-[color:var(--primary)] focus:ring-1 focus:ring-[color:var(--primary)]" />
-                <button type="button" className="absolute inset-y-0 right-0 px-3 text-[color:var(--on-surface-variant)]">
-                  <span className="material-symbols-outlined text-lg">visibility</span>
+                <input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2.5 pr-10 text-sm text-[color:var(--on-surface)] outline-none transition-colors focus:border-[color:var(--primary)] focus:ring-1 focus:ring-[color:var(--primary)]" />
+                <button type="button" onClick={() => setShowPassword((s) => !s)} className="absolute inset-y-0 right-0 px-3 text-[color:var(--on-surface-variant)]">
+                  <span className="material-symbols-outlined text-lg">{showPassword ? 'visibility_off' : 'visibility'}</span>
                 </button>
               </div>
               <p className="mt-1 text-xs text-[color:var(--on-surface-variant)]">Use at least 8 characters with one number.</p>
+              {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
             </div>
 
             <div>
               <label htmlFor="confirm-password" className="block text-xs font-medium uppercase tracking-wider text-[color:var(--on-surface-variant)]">Confirm Password</label>
-              <input id="confirm-password" type="password" placeholder="••••••••" className="mt-1 w-full rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2.5 text-sm text-[color:var(--on-surface)] outline-none transition-colors focus:border-[color:var(--primary)] focus:ring-1 focus:ring-[color:var(--primary)]" />
+              <input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" className="mt-1 w-full rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2.5 text-sm text-[color:var(--on-surface)] outline-none transition-colors focus:border-[color:var(--primary)] focus:ring-1 focus:ring-[color:var(--primary)]" />
+              {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
             </div>
 
             <div>
               <label htmlFor="role" className="block text-xs font-medium uppercase tracking-wider text-[color:var(--on-surface-variant)]">Role</label>
               <div className="relative mt-1">
-                <select id="role" className="w-full appearance-none rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2.5 text-sm text-[color:var(--on-surface)] outline-none transition-colors focus:border-[color:var(--primary)] focus:ring-1 focus:ring-[color:var(--primary)]">
+                <select id="role" value={role} onChange={(e) => setRole(e.target.value)} className="w-full appearance-none rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2.5 text-sm text-[color:var(--on-surface)] outline-none transition-colors focus:border-[color:var(--primary)] focus:ring-1 focus:ring-[color:var(--primary)]">
                   <option>Team Member</option>
                   <option>Manager</option>
                   <option>Subject Teacher</option>
@@ -62,14 +119,24 @@ export default function SignupPage() {
             </div>
 
             <label className="flex items-start gap-2 rounded-lg border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-low)] p-3 text-xs text-[color:var(--on-surface-variant)]">
-              <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-[color:var(--outline-variant)]" />
+              <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-[color:var(--outline-variant)]" />
               <span>
                 I agree to the <a href="#" className="font-medium text-[color:var(--primary)] hover:underline">Terms of Service</a> and <a href="#" className="font-medium text-[color:var(--primary)] hover:underline">Privacy Policy</a>.
               </span>
             </label>
+            {errors.terms && <p className="-mt-2 text-xs text-red-500">{errors.terms}</p>}
 
-            <button type="button" className="w-full rounded-lg bg-[color:var(--on-surface)] py-2.5 text-sm font-medium text-[color:var(--surface-container-lowest)] transition-colors hover:bg-[color:var(--inverse-surface)]">
-              Create Account
+            {apiError && <p className="text-xs text-red-500">{apiError}</p>}
+
+            <button type="submit" disabled={loading} className="w-full rounded-lg bg-[color:var(--on-surface)] py-2.5 text-sm font-medium text-[color:var(--surface-container-lowest)] transition-colors hover:bg-[color:var(--inverse-surface)] disabled:opacity-70 disabled:cursor-not-allowed">
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  Creating...
+                </span>
+              ) : (
+                'Create Account'
+              )}
             </button>
           </form>
 

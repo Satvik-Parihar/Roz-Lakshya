@@ -49,3 +49,9 @@ export const dashboardApi = {
   getBottlenecks: () => api.get('/dashboard/bottlenecks'),
   getDepartments: () => api.get('/dashboard/departments'),
 };
+
+export const alertsApi = {
+  getActive: () => api.get('/alerts/active'),
+  markRead: (id) => api.patch(`/alerts/${id}/read`),
+  markAllRead: () => api.patch('/alerts/read-all'),
+};
