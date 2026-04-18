@@ -58,7 +58,9 @@ async def create_task(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
     db.add(task)
     await db.flush()  # get task.id before commit
 
-    score, reasoning = compute_priority_score(task)
+    ai_result = compute_priority_score(task)
+    score = ai_result.get("score", 50.0)
+    reasoning = ai_result.get("reasoning", "Score unavailable")
     task.priority_score = score
     task.priority_label = get_priority_label(score)
     task.ai_reasoning = reasoning
@@ -99,7 +101,9 @@ async def update_task(task_id: int, payload: TaskUpdate, db: AsyncSession = Depe
 
     scoring_fields = {"deadline_days", "effort", "impact", "workload"}
     if scoring_fields.intersection(update_data.keys()):
-        score, reasoning = compute_priority_score(task)
+        ai_result = compute_priority_score(task)
+        score = ai_result.get("score", 50.0)
+        reasoning = ai_result.get("reasoning", "Score unavailable")
         task.priority_score = score
         task.priority_label = get_priority_label(score)
         task.ai_reasoning = reasoning
@@ -140,7 +144,9 @@ async def get_task_score(task_id: int, db: AsyncSession = Depends(get_db)):
     task = res.scalars().first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    score, reasoning = compute_priority_score(task)
+    ai_result = compute_priority_score(task)
+    score = ai_result.get("score", 50.0)
+    reasoning = ai_result.get("reasoning", "Score unavailable")
     return {
         "task_id": task_id,
         "current_score": task.priority_score,
