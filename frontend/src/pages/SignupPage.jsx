@@ -40,16 +40,18 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const res = await api.post('/users/login', {
-        email: 'admin@gmail.com',
-        password: 'admin123',
+      const res = await api.post('/users/signup', {
+        name,
+        email,
+        password,
+        role,
       });
 
       localStorage.setItem('access_token', res.data.access_token);
-      navigate('/tasks');
-    } catch {
-      setApiError('Account creation failed. Please try again.');
+      navigate('/dashboard');
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setApiError(typeof detail === 'string' ? detail : 'Account creation failed. Please try again.');
     } finally {
       setLoading(false);
     }
