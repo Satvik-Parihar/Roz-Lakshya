@@ -1,18 +1,27 @@
+import React from 'react';
 
-const tiers = [
-  { min: 70, label: 'High',   color: 'bg-red-100 text-red-700 border-red-300',    dot: 'bg-red-500'    },
-  { min: 40, label: 'Medium', color: 'bg-yellow-100 text-yellow-700 border-yellow-300', dot: 'bg-yellow-500' },
-  { min: 0,  label: 'Low',    color: 'bg-green-100 text-green-700 border-green-300', dot: 'bg-green-500'  },
-];
+export default function PriorityBadge({ score, className = '' }) {
+  let bgColor = 'bg-green-100';
+  let textColor = 'text-green-700';
+  let text = 'LOW';
+  let dotColor = 'bg-green-500';
 
-export default function PriorityBadge({ score = 0 }) {
-  const tier = tiers.find((t) => score >= t.min) ?? tiers[2];
+  if (score >= 75) {
+    bgColor = 'bg-red-100';
+    textColor = 'text-red-700';
+    text = 'HIGH';
+    dotColor = 'bg-red-500';
+  } else if (score >= 50) {
+    bgColor = 'bg-amber-100';
+    textColor = 'text-amber-700';
+    text = 'MED';
+    dotColor = 'bg-amber-500';
+  }
+
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${tier.color}`}
-    >
-      <span className={`w-1.5 h-1.5 rounded-full ${tier.dot}`} />
-      {tier.label}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${bgColor} ${textColor} ${className}`}>
+      <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${dotColor}`}></span>
+      {text}
     </span>
   );
 }

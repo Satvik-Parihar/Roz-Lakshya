@@ -1,96 +1,101 @@
-
-import { useState } from 'react';
+import React from 'react';
+import { format } from 'date-fns';
+import { Trash2 } from 'lucide-react';
 import PriorityBadge from './PriorityBadge';
-import TaskExpandView from './TaskExpandView';
-import EditTaskModal from './EditTaskModal';
-import DeleteConfirmDialog from './DeleteConfirmDialog';
 
-export default function TaskCard({ task }) {
-  const [expanded, setExpanded] = useState(false);
-  const [showEdit, setShowEdit] = useState(false);
-  const [showDelete, setShowDelete] = useState(false);
+export default function TaskCard({ task, onStatusChange, onDelete }) {
+  const {
+    id, title, description, deadline, effort, impact,
+    status, priority_score, complaint_boost, ai_reasoning,
+    assignee
+  } = task;
 
-  const score = task.priority_score ?? 0;
-  const leftBorderColor =
-    score >= 70 ? 'border-l-red-500'
-    : score >= 40 ? 'border-l-yellow-500'
-    : 'border-l-green-500';
+  const scoreNum = Number(priority_score) || 0;
+  
+  let borderColor = 'border-l-green-500';
+  if (scoreNum >= 75) borderColor = 'border-l-red-500';
+  else if (scoreNum >= 50) borderColor = 'border-l-amber-500';
+
+  const effortDots = Array.from({ length: 5 }, (_, i) => i < effort ? '●' : '○').join('');
 
   return (
-    <>
-      <article
-        className={`bg-white rounded-2xl border border-gray-100 border-l-4 ${leftBorderColor} shadow-sm hover:shadow-md transition-all duration-200 p-5 group`}
-      >
-        {/* Compact header */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-base font-semibold text-gray-900 truncate">
-                {task.title}
-              </h3>
-              {task.complaint_boost > 0 && (
-                <span
-                  title="Priority boosted by complaint"
-                  className="text-orange-500 cursor-help"
-                >
-                  🔔
-                </span>
-              )}
-              <PriorityBadge score={score} />
-            </div>
-
-            {/* Assignee + score compact */}
-            <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
-              {task.assignee && <span>👤 {task.assignee}</span>}
-              <span>Score: <strong className="text-gray-600">{score}</strong></span>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-            <button
-              onClick={() => setShowEdit(true)}
-              className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors"
-              title="Edit task"
-            >
-              ✏️
-            </button>
-            <button
-              onClick={() => setShowDelete(true)}
-              className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
-              title="Delete task"
-            >
-              🗑️
-            </button>
-          </div>
+    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 border-l-4 ${borderColor} p-4 flex flex-col gap-3 hover:shadow-md transition-shadow relative`}>
+      {/* Top row */}
+      <div className="flex justify-between items-start gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <PriorityBadge score={scoreNum} />
+          {complaint_boost > 0 && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+              ⚡ +{Number(complaint_boost).toFixed(0)} complaint boost
+            </span>
+          )}
         </div>
+        <span className="text-sm font-bold text-gray-700">{scoreNum.toFixed(1)}</span>
+      </div>
 
-        {/* Expand toggle */}
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="mt-3 flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
+      {/* Title */}
+      <h3 className="font-bold text-gray-900 leading-tight line-clamp-2" title={title}>
+        {title}
+      </h3>
+
+      {/* Middle row */}
+      <div className="text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1">
+        <span>Due: {deadline ? format(new Date(deadline), "MMM d, h:mm a") : 'No deadline'}</span>
+        <span>Effort: {effortDots}</span>
+        <span>Impact: {impact}/5</span>
+      </div>
+
+      {/* AI Reasoning */}
+      {ai_reasoning && (
+        <div className="text-xs text-gray-500 italic bg-gray-50 p-2 rounded border border-gray-100">
+          🤖 {ai_reasoning}
+        </div>
+      )}
+
+      {/* Assignee */}
+      {assignee && (
+        <div className="flex items-center gap-2 mt-auto pt-2">
+          <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold shrink-0">
+            {assignee.name ? assignee.name.charAt(0).toUpperCase() : '?'}
+          </div>
+          <span className="text-xs text-gray-700 truncate">{assignee.name}</span>
+        </div>
+      )}
+
+      {/* Bottom row */}
+      <div className="flex items-center justify-between border-t border-gray-100 pt-3 mt-2">
+        <div>
+          {status === 'todo' && (
+            <button 
+              onClick={() => onStatusChange(id, 'in_progress')}
+              className="text-xs font-semibold px-3 py-1.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
+            >
+              Start
+            </button>
+          )}
+          {status === 'in_progress' && (
+            <button 
+              onClick={() => onStatusChange(id, 'done')}
+              className="text-xs font-semibold px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 transition-colors"
+            >
+              Complete ✓
+            </button>
+          )}
+          {status === 'done' && (
+            <span className="text-xs font-bold text-green-600">
+              Done ✓
+            </span>
+          )}
+        </div>
+        
+        <button 
+          onClick={() => onDelete(id)}
+          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+          title="Delete task"
         >
-          <span
-            className="inline-block transition-transform duration-200"
-            style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
-          >
-            ▶
-          </span>
-          {expanded ? 'Collapse' : 'View Details'}
+          <Trash2 size={16} />
         </button>
-
-        {/* Expanded content with smooth height transition */}
-        <div
-          className="overflow-hidden transition-all duration-300"
-          style={{ maxHeight: expanded ? '1000px' : '0px', opacity: expanded ? 1 : 0 }}
-        >
-          <TaskExpandView task={task} />
-        </div>
-      </article>
-
-      {showEdit && <EditTaskModal task={task} onClose={() => setShowEdit(false)} />}
-      {showDelete && <DeleteConfirmDialog task={task} onClose={() => setShowDelete(false)} />}
-    </>
-
+      </div>
+    </div>
   );
 }
