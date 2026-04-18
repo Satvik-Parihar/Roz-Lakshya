@@ -8,7 +8,7 @@ const mapTask = (task) => ({
 
 export const taskApi = {
   getAll: async () => {
-    const res = await api.get('/tasks');
+    const res = await api.get('/tasks/');
     return { ...res, data: res.data.map(mapTask) };
   },
   create: async (data) => {

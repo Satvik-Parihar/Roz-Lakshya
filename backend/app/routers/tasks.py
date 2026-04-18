@@ -15,7 +15,7 @@ except ImportError:
     def compute_priority_score(task):
         return 50.0, "AI engine not yet available"
 
-router = APIRouter(prefix="/tasks", tags=["Tasks"])
+router = APIRouter(prefix="/tasks", tags=["Tasks"], redirect_slashes=False)
 
 def get_priority_label(score: float) -> str:
     if score > 75:

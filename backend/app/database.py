@@ -9,6 +9,10 @@ engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.ENVIRONMENT == "development",
     future=True,
+    # HINT: Supabase/PgBouncer doesn't support prepared statements in transaction mode
+    connect_args={
+        "prepared_statement_cache_size": 0,
+    }
 )
 
 # Session factory
@@ -33,7 +37,4 @@ async def get_db() -> AsyncSession:
             await session.close()
 
 
-# Initialise database — creates all tables (dev convenience, use Alembic in prod)
-async def init_db() -> None:
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+
