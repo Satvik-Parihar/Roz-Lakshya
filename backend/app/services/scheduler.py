@@ -9,6 +9,14 @@ from app.services.ai_engine import compute_priority_score
 
 scheduler = AsyncIOScheduler()
 
+
+def _label_for_score(score: float) -> str:
+    if score >= 70:
+        return "High"
+    if score >= 40:
+        return "Medium"
+    return "Low"
+
 async def rescore_all_tasks():
     """
     Phase 3: background re-score on deadline changes.
@@ -23,15 +31,18 @@ async def rescore_all_tasks():
         for task in tasks:
             try:
                 task_data = {
+                    "id": task.id,
                     "title": task.title,
-                    "deadline": str(task.created_at) if task.created_at else None,
+                    "deadline_days": task.deadline_days,
                     "effort": task.effort,
                     "impact": task.impact,
+                    "workload": task.workload,
                     "complaint_boost": task.complaint_boost,
                     "status": task.status
                 }
                 ai_res = await compute_priority_score(task_data)
                 task.priority_score = ai_res.get("score", task.priority_score)
+                task.priority_label = _label_for_score(float(task.priority_score or 0))
                 task.ai_reasoning = ai_res.get("reasoning", task.ai_reasoning)
             except Exception as e:
                 print(f"[Scheduler] Error re-scoring task {task.id}: {e}")
@@ -45,7 +56,13 @@ async def check_sla_breaches():
 
 def start_scheduler():
     if not scheduler.running:
-        scheduler.add_job(rescore_all_tasks, 'interval', minutes=15, id='rescore_tasks')
+        scheduler.add_job(
+            rescore_all_tasks,
+            'interval',
+            minutes=15,
+            id='rescore_tasks',
+            next_run_time=datetime.now(),
+        )
         scheduler.add_job(check_sla_breaches, 'interval', minutes=15, id='check_sla')
         scheduler.start()
         print("[Scheduler] AsyncIOScheduler started.")
