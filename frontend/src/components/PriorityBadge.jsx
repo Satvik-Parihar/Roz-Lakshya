@@ -1,8 +1,8 @@
 
 const tiers = [
-  { min: 70, label: 'High',   color: 'bg-red-100 text-red-700 border-red-300',    dot: 'bg-red-500'    },
-  { min: 40, label: 'Medium', color: 'bg-yellow-100 text-yellow-700 border-yellow-300', dot: 'bg-yellow-500' },
-  { min: 0,  label: 'Low',    color: 'bg-green-100 text-green-700 border-green-300', dot: 'bg-green-500'  },
+  { min: 70, label: 'High',   color: 'bg-rose-100 text-rose-700 border-rose-300', dot: 'bg-rose-500' },
+  { min: 40, label: 'Medium', color: 'bg-amber-100 text-amber-700 border-amber-300', dot: 'bg-amber-500' },
+  { min: 0,  label: 'Low',    color: 'bg-emerald-100 text-emerald-700 border-emerald-300', dot: 'bg-emerald-500' },
 ];
 
 export default function PriorityBadge({ score = 0 }) {

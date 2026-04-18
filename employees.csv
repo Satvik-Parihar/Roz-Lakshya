@@ -1,0 +1,276 @@
+employee_id,name,email,phone,department,designation,location,date_of_joining,total_tasks_assigned,open_tasks,overdue_tasks,complaints_handled
+EMP001,Mohit Rao,mohit.rao@techcorp.in,9314829375,Engineering,Senior Developer,Vadodara,2020-04-05,173,111,8,27
+EMP002,Nikhil Tiwari,nikhil.tiwari@techcorp.in,9882791100,Product,Senior Product Manager,Pune,2018-10-16,179,110,6,28
+EMP003,Parth Krishnan,parth.krishnan@techcorp.in,9875483847,Marketing,Marketing Analyst,Rajkot,2022-07-28,182,117,7,40
+EMP004,Aakash Sharma,aakash.sharma@techcorp.in,9595513911,Finance,Senior Financial Analyst,Vadodara,2022-02-23,168,108,10,28
+EMP005,Nikhil Chauhan,nikhil.chauhan@techcorp.in,9439709088,HR,Senior HR Business Partner,Pune,2017-05-18,160,94,11,20
+EMP006,Vivaan Subramanian,vivaan.subramanian@techcorp.in,9318790375,Operations,Operations Analyst,Mumbai,2018-08-17,177,106,15,32
+EMP007,Mihir Makwana,mihir.makwana@techcorp.in,9596820825,Sales,Sales Representative,Ahmedabad,2022-03-07,179,107,5,34
+EMP008,Aisha Khanna,aisha.khanna@techcorp.in,9950230769,Legal,Legal Analyst,Bengaluru,2019-09-22,197,114,9,32
+EMP009,Simran Mehta,simran.mehta@techcorp.in,9217888716,QA,Senior QA Engineer,Ahmedabad,2019-08-22,160,91,20,34
+EMP010,Qasim Modi,qasim.modi@techcorp.in,9556791494,Customer Support,Senior Support Specialist,Surat,2019-05-20,191,117,12,29
+EMP011,Vivaan Rao,vivaan.rao@techcorp.in,9454010198,Engineering,Software Developer,Vadodara,2023-04-26,187,118,8,29
+EMP012,Kabir Agarwal,kabir.agarwal@techcorp.in,9327026799,Product,Senior Product Manager,Bengaluru,2021-09-13,174,104,14,35
+EMP013,Riya Reddy,riya.reddy@techcorp.in,9846249394,Marketing,Marketing Analyst,Bengaluru,2017-03-24,177,109,9,42
+EMP014,Meera Makwana,meera.makwana@techcorp.in,9538408208,Finance,Finance Executive,Surat,2018-02-05,175,112,7,39
+EMP015,Jinal Verma,jinal.verma@techcorp.in,9290745412,HR,Senior HR Business Partner,Pune,2019-04-18,178,103,16,33
+EMP016,Meet Anand,meet.anand@techcorp.in,9635940550,Operations,Operations Analyst,Rajkot,2021-02-28,191,125,9,28
+EMP017,Bhoomi Verma,bhoomi.verma@techcorp.in,9828345556,Sales,Senior Sales Representative,Surat,2021-01-19,190,124,7,34
+EMP018,Advik Menon,advik.menon@techcorp.in,9332274150,Legal,Senior Legal Analyst,Pune,2023-06-27,180,103,11,21
+EMP019,Lakshya Rao,lakshya.rao@techcorp.in,9544599129,QA,QA Engineer,Mumbai,2018-03-02,166,103,5,35
+EMP020,Esha Malhotra,esha.malhotra@techcorp.in,9527971903,Customer Support,Support Specialist,Bengaluru,2020-05-28,181,114,9,36
+EMP021,Tejas Bansal,tejas.bansal@techcorp.in,9873058422,Engineering,Software Developer,Gandhinagar,2018-12-24,209,139,13,48
+EMP022,Hardik Kumar,hardik.kumar@techcorp.in,9920331532,Product,Product Manager,Rajkot,2023-05-15,190,116,8,40
+EMP023,Rohan Gaikwad,rohan.gaikwad@techcorp.in,9570101183,Marketing,Senior Marketing Analyst,Pune,2021-02-17,175,99,7,32
+EMP024,Jinal Jadhav,jinal.jadhav@techcorp.in,9835306774,Finance,Finance Manager,Mumbai,2024-09-05,178,107,14,35
+EMP025,Manav Subramanian,manav.subramanian@techcorp.in,9412332550,HR,Senior HR Business Partner,Pune,2019-05-13,185,113,11,44
+EMP026,Chandni Singh,chandni.singh@techcorp.in,9507833486,Operations,Operations Analyst,Mumbai,2020-06-01,184,122,11,37
+EMP027,Hiral Singhal,hiral.singhal@techcorp.in,9417184708,Sales,Senior Sales Representative,Rajkot,2019-11-09,199,116,9,35
+EMP028,Pavan Khanna,pavan.khanna@techcorp.in,9908152652,Legal,Legal Analyst,Rajkot,2023-06-22,198,126,16,30
+EMP029,Lakshya Shah,lakshya.shah@techcorp.in,9220615733,QA,QA Engineer,Rajkot,2017-09-10,192,109,12,30
+EMP030,Tanvi Solanki,tanvi.solanki@techcorp.in,9942749427,Customer Support,Support Specialist,Bengaluru,2020-05-24,174,106,9,32
+EMP031,Pavan Murthy,pavan.murthy@techcorp.in,9701696140,Engineering,Senior Developer,Gandhinagar,2020-12-01,184,113,12,34
+EMP032,Param Rajput,param.rajput@techcorp.in,9430176774,Product,Senior Product Manager,Surat,2017-01-14,190,119,9,31
+EMP033,Khyati Naidu,khyati.naidu@techcorp.in,9698319786,Marketing,Marketing Analyst,Gandhinagar,2020-02-28,171,100,6,32
+EMP034,Kartik Iyer,kartik.iyer@techcorp.in,9947448986,Finance,Senior Financial Analyst,Vadodara,2021-08-11,181,110,16,23
+EMP035,Riya Gaikwad,riya.gaikwad@techcorp.in,9240299001,HR,Senior HR Business Partner,Bengaluru,2023-07-18,189,123,8,36
+EMP036,Simran Naidu,simran.naidu@techcorp.in,9368615513,Operations,Senior Operations Analyst,Rajkot,2021-08-19,183,115,9,27
+EMP037,Geetika Verma,geetika.verma@techcorp.in,9987625212,Sales,Senior Sales Representative,Bengaluru,2024-11-06,193,112,10,38
+EMP038,Pranav Jadeja,pranav.jadeja@techcorp.in,9357239573,Legal,Legal Analyst,Bengaluru,2017-02-11,162,98,1,28
+EMP039,Girish Desai,girish.desai@techcorp.in,9460509792,QA,Senior QA Engineer,Ahmedabad,2021-11-01,194,120,7,43
+EMP040,Meet Krishnan,meet.krishnan@techcorp.in,9380823620,Customer Support,Senior Support Specialist,Vadodara,2019-10-02,178,123,9,34
+EMP041,Kartik Mehta,kartik.mehta@techcorp.in,9151277992,Engineering,Senior Developer,Mumbai,2020-09-25,181,113,7,30
+EMP042,Hemal Gupta,hemal.gupta@techcorp.in,9999617225,Product,Product Manager,Bengaluru,2017-12-25,179,111,9,30
+EMP043,Pavan Yadav,pavan.yadav@techcorp.in,9964742624,Marketing,Senior Marketing Analyst,Rajkot,2018-08-06,199,119,11,32
+EMP044,Gaurav Dubey,gaurav.dubey@techcorp.in,9805274535,Finance,Financial Analyst,Mumbai,2018-09-07,187,121,6,36
+EMP045,Kriti Singhal,kriti.singhal@techcorp.in,9479763582,HR,HR Business Partner,Surat,2018-12-05,216,139,9,42
+EMP046,Neha Sharma,neha.sharma@techcorp.in,9685536267,Operations,Senior Operations Analyst,Surat,2017-09-21,176,110,10,31
+EMP047,Geetika Gupta,geetika.gupta@techcorp.in,9480006467,Sales,Senior Sales Representative,Rajkot,2019-06-25,164,100,13,28
+EMP048,Dhruv Shinde,dhruv.shinde@techcorp.in,9467651507,Legal,Legal Analyst,Pune,2020-05-06,177,110,6,28
+EMP049,Jay Sharma,jay.sharma@techcorp.in,9633174470,QA,Senior QA Engineer,Ahmedabad,2020-07-22,171,116,6,32
+EMP050,Dev Soni,dev.soni@techcorp.in,9953470055,Customer Support,Support Specialist,Rajkot,2024-12-26,188,122,7,32
+EMP051,Aisha Gaikwad,aisha.gaikwad@techcorp.in,9278748757,Engineering,Software Developer,Bengaluru,2022-05-11,221,131,11,47
+EMP052,Atharva Vaghela,atharva.vaghela@techcorp.in,9525767138,Product,Product Manager,Ahmedabad,2021-03-05,204,136,7,28
+EMP053,Aditya Gaikwad,aditya.gaikwad@techcorp.in,9406708141,Marketing,Senior Marketing Analyst,Gandhinagar,2021-02-16,207,126,13,46
+EMP054,Sachin Rajput,sachin.rajput@techcorp.in,9177632322,Finance,Senior Financial Analyst,Ahmedabad,2022-03-20,184,109,14,30
+EMP055,Meet Kulkarni,meet.kulkarni@techcorp.in,9459203579,HR,Senior HR Business Partner,Mumbai,2017-07-27,181,114,8,35
+EMP056,Gaurav Kathiriya,gaurav.kathiriya@techcorp.in,9343347603,Operations,Operations Analyst,Vadodara,2017-05-24,175,99,10,39
+EMP057,Lakshya Krishnan,lakshya.krishnan@techcorp.in,9650048144,Sales,Sales Representative,Rajkot,2019-09-14,185,112,7,33
+EMP058,Dhruv Kumar,dhruv.kumar@techcorp.in,9359593411,Legal,Senior Legal Analyst,Gandhinagar,2019-10-04,185,120,12,31
+EMP059,Bharti Shah,bharti.shah@techcorp.in,9707267152,QA,QA Engineer,Ahmedabad,2020-03-06,202,136,14,44
+EMP060,Khyati Joshi,khyati.joshi@techcorp.in,9373373468,Customer Support,Senior Support Specialist,Vadodara,2023-03-01,188,118,9,30
+EMP061,Ishaan Solanki,ishaan.solanki@techcorp.in,9525014372,Engineering,Software Developer,Bengaluru,2018-03-19,189,126,11,41
+EMP062,Vinay Menon,vinay.menon@techcorp.in,9566719059,Product,Product Manager,Vadodara,2024-10-03,206,137,2,41
+EMP063,Drashti Solanki,drashti.solanki@techcorp.in,9271668483,Marketing,Marketing Analyst,Rajkot,2024-04-23,170,102,5,23
+EMP064,Yash Subramanian,yash.subramanian@techcorp.in,9756470119,Finance,Senior Financial Analyst,Rajkot,2019-03-16,161,100,7,30
+EMP065,Bhavik Verma,bhavik.verma@techcorp.in,9837124880,HR,HR Business Partner,Gandhinagar,2019-11-17,205,123,11,45
+EMP066,Jagdish Jadhav,jagdish.jadhav@techcorp.in,9683279503,Operations,Senior Operations Analyst,Surat,2020-04-17,175,107,9,36
+EMP067,Rahul Goel,rahul.goel@techcorp.in,9856977961,Sales,Sales Representative,Pune,2023-09-18,199,119,11,36
+EMP068,Veer Mishra,veer.mishra@techcorp.in,9368969519,Legal,Senior Legal Analyst,Mumbai,2022-08-07,172,103,9,34
+EMP069,Ayaan Mehta,ayaan.mehta@techcorp.in,9568965132,QA,Senior QA Engineer,Ahmedabad,2022-04-02,174,107,5,38
+EMP070,Hemal Verma,hemal.verma@techcorp.in,9388006034,Customer Support,Senior Support Specialist,Gandhinagar,2017-10-17,196,111,17,45
+EMP071,Jinal Singh,jinal.singh@techcorp.in,9879204932,Engineering,Senior Developer,Mumbai,2018-03-12,191,120,13,40
+EMP072,Isha Sharma,isha.sharma@techcorp.in,9847962241,Product,Senior Product Manager,Gandhinagar,2021-04-15,178,111,14,31
+EMP073,Kabir Patel,kabir.patel@techcorp.in,9481123932,Marketing,Marketing Analyst,Rajkot,2019-10-03,186,112,8,38
+EMP074,Geetika Patel,geetika.patel@techcorp.in,9485298240,Finance,Senior Financial Analyst,Mumbai,2023-04-18,162,106,11,31
+EMP075,Ishita Anand,ishita.anand@techcorp.in,9179522536,HR,Senior HR Business Partner,Ahmedabad,2017-03-07,181,108,16,30
+EMP076,Sumit Menon,sumit.menon@techcorp.in,9766504436,Operations,Operations Analyst,Gandhinagar,2018-11-01,184,115,15,30
+EMP077,Bharti Pandya,bharti.pandya@techcorp.in,9805971966,Sales,Senior Sales Representative,Pune,2018-12-28,193,114,14,39
+EMP078,Drashti Rathod,drashti.rathod@techcorp.in,9554997465,Legal,Legal Analyst,Pune,2021-06-23,180,107,11,33
+EMP079,Utsav Rajput,utsav.rajput@techcorp.in,9225293203,QA,Senior QA Engineer,Gandhinagar,2020-02-02,176,111,12,36
+EMP080,Sumit Dubey,sumit.dubey@techcorp.in,9450107184,Customer Support,Senior Support Specialist,Surat,2021-05-20,180,100,8,36
+EMP081,Ruchit Kumar,ruchit.kumar@techcorp.in,9574878334,Engineering,Senior Developer,Bengaluru,2017-10-24,199,119,8,33
+EMP082,Sahil Desai,sahil.desai@techcorp.in,9933994596,Product,Senior Product Manager,Pune,2018-12-01,185,106,16,34
+EMP083,Payal Rathod,payal.rathod@techcorp.in,9920947751,Marketing,Marketing Analyst,Bengaluru,2023-06-17,171,103,5,41
+EMP084,Dipak Makwana,dipak.makwana@techcorp.in,9844820190,Finance,Senior Financial Analyst,Surat,2021-07-25,158,102,8,31
+EMP085,Kunal Desai,kunal.desai@techcorp.in,9734613140,HR,Senior HR Business Partner,Gandhinagar,2024-12-16,174,110,7,29
+EMP086,Ayush Makwana,ayush.makwana@techcorp.in,9191397210,Operations,Senior Operations Analyst,Ahmedabad,2017-10-03,189,119,9,36
+EMP087,Shruti Pawar,shruti.pawar@techcorp.in,9540255572,Sales,Senior Sales Representative,Rajkot,2023-11-22,168,98,18,24
+EMP088,Arjun Patel,arjun.patel@techcorp.in,9230313059,Legal,Legal Analyst,Mumbai,2020-04-22,185,109,8,36
+EMP089,Raj Shah,raj.shah@techcorp.in,9561403153,QA,Senior QA Engineer,Gandhinagar,2019-03-27,178,111,5,44
+EMP090,Foram Verma,foram.verma@techcorp.in,9857700436,Customer Support,Senior Support Specialist,Pune,2018-05-27,177,100,13,50
+EMP091,Diya Bhatia,diya.bhatia@techcorp.in,9549508849,Engineering,Software Developer,Pune,2018-02-09,178,101,16,33
+EMP092,Mansi Tiwari,mansi.tiwari@techcorp.in,9880841488,Product,Product Manager,Vadodara,2021-12-04,177,107,9,36
+EMP093,Krishna Khanna,krishna.khanna@techcorp.in,9749508985,Marketing,Marketing Analyst,Surat,2021-08-13,202,118,14,37
+EMP094,Hemal Makwana,hemal.makwana@techcorp.in,9620065094,Finance,Financial Analyst,Rajkot,2021-08-09,185,115,12,33
+EMP095,Ishan Tiwari,ishan.tiwari@techcorp.in,9781308990,HR,HR Business Partner,Vadodara,2024-05-05,194,136,10,35
+EMP096,Sanya Menon,sanya.menon@techcorp.in,9648031388,Operations,Senior Operations Analyst,Vadodara,2020-10-12,208,126,10,33
+EMP097,Veer Yadav,veer.yadav@techcorp.in,9696770115,Sales,Sales Representative,Pune,2019-10-01,208,128,10,37
+EMP098,Ayush Malhotra,ayush.malhotra@techcorp.in,9943322756,Legal,Senior Legal Analyst,Pune,2018-01-14,187,110,12,31
+EMP099,Nikhil Subramanian,nikhil.subramanian@techcorp.in,9591665293,QA,QA Engineer,Surat,2018-01-07,190,128,10,28
+EMP100,Nikhil Anand,nikhil.anand@techcorp.in,9359521639,Customer Support,Support Specialist,Gandhinagar,2020-02-05,173,107,6,36
+EMP101,Preet Kapoor,preet.kapoor@techcorp.in,9433403086,Engineering,Senior Developer,Vadodara,2020-02-20,184,110,9,41
+EMP102,Jay Pillai,jay.pillai@techcorp.in,9126996131,Product,Senior Product Manager,Rajkot,2021-07-11,177,104,12,30
+EMP103,Jagdish Mehta,jagdish.mehta@techcorp.in,9575674734,Marketing,Marketing Analyst,Gandhinagar,2024-09-20,172,106,11,40
+EMP104,Pratik Kumar,pratik.kumar@techcorp.in,9473777296,Finance,Financial Analyst,Vadodara,2017-12-11,175,107,10,31
+EMP105,Vinay Kulkarni,vinay.kulkarni@techcorp.in,9324089113,HR,Senior HR Business Partner,Pune,2024-03-20,164,99,13,40
+EMP106,Utsav Gohil,utsav.gohil@techcorp.in,9289670003,Operations,Senior Operations Analyst,Gandhinagar,2017-01-20,155,93,12,22
+EMP107,Utsav Sharma,utsav.sharma@techcorp.in,9237774418,Sales,Senior Sales Representative,Pune,2017-02-18,182,116,6,36
+EMP108,Meet Goel,meet.goel@techcorp.in,9699218642,Legal,Legal Analyst,Gandhinagar,2022-03-18,194,108,11,41
+EMP109,Naman Singhal,naman.singhal@techcorp.in,9930104290,QA,Senior QA Engineer,Surat,2021-01-22,174,103,11,39
+EMP110,Devansh Subramanian,devansh.subramanian@techcorp.in,9313312812,Customer Support,Senior Support Specialist,Vadodara,2017-03-21,160,94,10,34
+EMP111,Harsh Chauhan,harsh.chauhan@techcorp.in,9519840819,Engineering,Software Developer,Pune,2023-06-19,183,117,10,34
+EMP112,Foram Tiwari,foram.tiwari@techcorp.in,9212838189,Product,Senior Product Manager,Rajkot,2022-03-03,183,110,14,30
+EMP113,Sahil Goel,sahil.goel@techcorp.in,9205875169,Marketing,Senior Marketing Analyst,Ahmedabad,2022-07-11,175,112,9,33
+EMP114,Dipak Vaghela,dipak.vaghela@techcorp.in,9233385266,Finance,Financial Analyst,Gandhinagar,2021-07-05,180,115,10,30
+EMP115,Pooja Mittal,pooja.mittal@techcorp.in,9239206654,HR,Senior HR Business Partner,Gandhinagar,2017-09-17,165,99,8,23
+EMP116,Sahil Sharma,sahil.sharma@techcorp.in,9365154644,Operations,Senior Operations Analyst,Pune,2019-05-10,171,113,9,21
+EMP117,Bharti Khanna,bharti.khanna@techcorp.in,9512206216,Sales,Senior Sales Representative,Surat,2022-01-16,163,103,9,29
+EMP118,Rahul Chauhan,rahul.chauhan@techcorp.in,9799252618,Legal,Legal Analyst,Surat,2024-05-08,184,102,11,33
+EMP119,Riya Murthy,riya.murthy@techcorp.in,9971035547,QA,Senior QA Engineer,Surat,2022-09-05,156,91,6,19
+EMP120,Hiral Anand,hiral.anand@techcorp.in,9894933762,Customer Support,Support Specialist,Ahmedabad,2018-01-27,163,98,11,27
+EMP121,Varun Malhotra,varun.malhotra@techcorp.in,9889157998,Engineering,Software Developer,Ahmedabad,2024-04-21,178,115,9,31
+EMP122,Hema Rathod,hema.rathod@techcorp.in,9782356654,Product,Senior Product Manager,Ahmedabad,2020-12-02,189,112,3,31
+EMP123,Sumit Sharma,sumit.sharma@techcorp.in,9787536170,Marketing,Senior Marketing Analyst,Pune,2019-03-28,192,105,16,43
+EMP124,Hema Chaudhary,hema.chaudhary@techcorp.in,9995852851,Finance,Senior Financial Analyst,Ahmedabad,2017-05-02,193,122,11,27
+EMP125,Krishna Goel,krishna.goel@techcorp.in,9367540568,HR,Senior HR Business Partner,Pune,2022-08-25,147,101,8,30
+EMP126,Pooja Chaudhary,pooja.chaudhary@techcorp.in,9716200087,Operations,Senior Operations Analyst,Mumbai,2019-12-02,170,119,12,30
+EMP127,Naman Zala,naman.zala@techcorp.in,9984174034,Sales,Senior Sales Representative,Mumbai,2020-11-14,183,104,12,31
+EMP128,Sahil Verma,sahil.verma@techcorp.in,9650230785,Legal,Senior Legal Analyst,Gandhinagar,2024-02-13,145,94,8,29
+EMP129,Om Malhotra,om.malhotra@techcorp.in,9379450804,QA,QA Engineer,Gandhinagar,2024-01-18,173,113,8,28
+EMP130,Kriti Anand,kriti.anand@techcorp.in,9132556667,Customer Support,Support Specialist,Gandhinagar,2020-03-22,178,112,5,31
+EMP131,Arjun Gupta,arjun.gupta@techcorp.in,9667544973,Engineering,Senior Developer,Rajkot,2021-05-11,189,118,10,43
+EMP132,Yuvraj Reddy,yuvraj.reddy@techcorp.in,9530675350,Product,Senior Product Manager,Vadodara,2021-06-26,180,108,7,36
+EMP133,Tanvi Shah,tanvi.shah@techcorp.in,9267247265,Marketing,Senior Marketing Analyst,Bengaluru,2024-05-24,188,116,6,36
+EMP134,Dilip Agarwal,dilip.agarwal@techcorp.in,9442004875,Finance,Financial Analyst,Vadodara,2022-10-05,170,114,8,27
+EMP135,Advik Solanki,advik.solanki@techcorp.in,9528360479,HR,HR Business Partner,Vadodara,2024-04-17,176,107,10,28
+EMP136,Priya Soni,priya.soni@techcorp.in,9838353313,Operations,Operations Analyst,Pune,2022-07-18,153,104,4,30
+EMP137,Hardik Menon,hardik.menon@techcorp.in,9331428853,Sales,Senior Sales Representative,Surat,2018-04-21,175,113,10,35
+EMP138,Bhavik Soni,bhavik.soni@techcorp.in,9515202146,Legal,Legal Analyst,Vadodara,2020-12-14,188,132,8,32
+EMP139,Rahul Menon,rahul.menon@techcorp.in,9186673440,QA,Senior QA Engineer,Vadodara,2017-12-02,171,103,6,28
+EMP140,Nikhil Agarwal,nikhil.agarwal@techcorp.in,9605435035,Customer Support,Senior Support Specialist,Pune,2020-12-09,192,116,9,40
+EMP141,Chandni Menon,chandni.menon@techcorp.in,9642933495,Engineering,Senior Developer,Ahmedabad,2019-11-18,183,99,16,31
+EMP142,Sachin Makwana,sachin.makwana@techcorp.in,9791564592,Product,Product Manager,Pune,2022-05-24,147,93,10,22
+EMP143,Nisha Kathiriya,nisha.kathiriya@techcorp.in,9253954230,Marketing,Marketing Analyst,Bengaluru,2022-12-27,177,112,9,26
+EMP144,Pooja Chauhan,pooja.chauhan@techcorp.in,9576726420,Finance,Senior Financial Analyst,Bengaluru,2019-08-22,188,115,11,31
+EMP145,Eklavya Makwana,eklavya.makwana@techcorp.in,9739721755,HR,Senior HR Business Partner,Gandhinagar,2024-10-15,201,122,6,41
+EMP146,Yash Chauhan,yash.chauhan@techcorp.in,9135928302,Operations,Operations Analyst,Bengaluru,2020-02-12,166,103,8,29
+EMP147,Farhan Shah,farhan.shah@techcorp.in,9509091810,Sales,Sales Representative,Pune,2022-01-24,192,110,10,34
+EMP148,Mihir Bhatt,mihir.bhatt@techcorp.in,9941164954,Legal,Legal Analyst,Surat,2023-09-25,202,117,12,45
+EMP149,Aarav Pandya,aarav.pandya@techcorp.in,9235648407,QA,QA Engineer,Rajkot,2019-04-25,197,106,17,32
+EMP150,Jatin Patel,jatin.patel@techcorp.in,9471430209,Customer Support,Senior Support Specialist,Ahmedabad,2017-04-02,172,123,8,31
+EMP151,Komal Yadav,komal.yadav@techcorp.in,9747835222,Engineering,Software Developer,Rajkot,2020-09-25,197,119,9,39
+EMP152,Vivaan Verma,vivaan.verma@techcorp.in,9595295562,Product,Product Manager,Gandhinagar,2024-06-27,191,123,14,41
+EMP153,Chahat Reddy,chahat.reddy@techcorp.in,9462549146,Marketing,Senior Marketing Analyst,Rajkot,2021-01-21,188,110,12,33
+EMP154,Fatima Trivedi,fatima.trivedi@techcorp.in,9279771135,Finance,Senior Financial Analyst,Ahmedabad,2020-07-26,193,127,12,32
+EMP155,Payal Anand,payal.anand@techcorp.in,9975042523,HR,Senior HR Business Partner,Mumbai,2022-03-23,173,108,7,36
+EMP156,Amit Menon,amit.menon@techcorp.in,9802149139,Operations,Operations Analyst,Gandhinagar,2024-11-16,190,105,18,42
+EMP157,Vihaan Chauhan,vihaan.chauhan@techcorp.in,9130796733,Sales,Senior Sales Representative,Gandhinagar,2018-06-04,166,104,14,27
+EMP158,Ayaan Subramanian,ayaan.subramanian@techcorp.in,9864218808,Legal,Senior Legal Analyst,Mumbai,2017-03-12,170,104,8,35
+EMP159,Dimple Naidu,dimple.naidu@techcorp.in,9733061346,QA,Senior QA Engineer,Mumbai,2021-06-24,199,116,10,31
+EMP160,Sahil Rao,sahil.rao@techcorp.in,9279655246,Customer Support,Support Specialist,Rajkot,2021-09-03,181,115,11,25
+EMP161,Nikhil Mittal,nikhil.mittal@techcorp.in,9617328577,Engineering,Senior Developer,Surat,2018-11-07,184,119,11,29
+EMP162,Jay Reddy,jay.reddy@techcorp.in,9517431612,Product,Senior Product Manager,Mumbai,2020-04-02,166,98,10,33
+EMP163,Shruti Gohil,shruti.gohil@techcorp.in,9369701202,Marketing,Marketing Analyst,Pune,2019-11-01,184,106,13,26
+EMP164,Devansh Pillai,devansh.pillai@techcorp.in,9304728228,Finance,Financial Analyst,Pune,2021-08-24,152,100,10,27
+EMP165,Simran Gupta,simran.gupta@techcorp.in,9862522558,HR,Senior HR Business Partner,Ahmedabad,2017-03-02,175,112,11,32
+EMP166,Nidhi Reddy,nidhi.reddy@techcorp.in,9603917570,Operations,Operations Analyst,Vadodara,2017-03-10,188,112,14,33
+EMP167,Hiral Vaghela,hiral.vaghela@techcorp.in,9377968207,Sales,Senior Sales Representative,Rajkot,2022-04-02,168,100,12,34
+EMP168,Bhavik Tiwari,bhavik.tiwari@techcorp.in,9563422158,Legal,Legal Analyst,Surat,2018-09-06,187,106,8,33
+EMP169,Aarav Agarwal,aarav.agarwal@techcorp.in,9735322222,QA,Senior QA Engineer,Rajkot,2022-08-13,176,110,9,30
+EMP170,Bhoomi Bhatt,bhoomi.bhatt@techcorp.in,9761465377,Customer Support,Support Specialist,Rajkot,2020-07-27,180,105,7,37
+EMP171,Garima Dubey,garima.dubey@techcorp.in,9547032495,Engineering,Software Developer,Rajkot,2024-04-25,183,118,8,28
+EMP172,Payal Parmar,payal.parmar@techcorp.in,9140180647,Product,Senior Product Manager,Rajkot,2022-08-26,182,119,9,38
+EMP173,Neel Trivedi,neel.trivedi@techcorp.in,9694536471,Marketing,Marketing Analyst,Ahmedabad,2019-01-07,194,118,14,37
+EMP174,Gaurav Pawar,gaurav.pawar@techcorp.in,9569619876,Finance,Senior Financial Analyst,Ahmedabad,2018-02-06,178,91,16,32
+EMP175,Arjun Mishra,arjun.mishra@techcorp.in,9194071192,HR,Senior HR Business Partner,Surat,2018-02-03,176,101,16,31
+EMP176,Arjun Malhotra,arjun.malhotra@techcorp.in,9388998585,Operations,Operations Analyst,Mumbai,2022-03-15,183,105,14,31
+EMP177,Hetvi Makwana,hetvi.makwana@techcorp.in,9150365928,Sales,Sales Representative,Pune,2019-08-07,185,116,10,34
+EMP178,Indira Pillai,indira.pillai@techcorp.in,9181813706,Legal,Senior Legal Analyst,Mumbai,2019-12-10,172,105,11,36
+EMP179,Nidhi Makwana,nidhi.makwana@techcorp.in,9145859338,QA,Senior QA Engineer,Rajkot,2020-01-17,177,101,10,24
+EMP180,Hardik Khanna,hardik.khanna@techcorp.in,9799908198,Customer Support,Support Specialist,Rajkot,2024-02-09,188,102,11,38
+EMP181,Aakash Pandya,aakash.pandya@techcorp.in,9136181139,Engineering,Senior Developer,Vadodara,2024-02-26,168,110,7,29
+EMP182,Aarohi Singh,aarohi.singh@techcorp.in,9239983896,Product,Senior Product Manager,Vadodara,2023-02-19,160,92,10,36
+EMP183,Sahil Modi,sahil.modi@techcorp.in,9941087686,Marketing,Marketing Analyst,Rajkot,2020-09-25,199,125,8,37
+EMP184,Arjun Goel,arjun.goel@techcorp.in,9762531689,Finance,Finance Manager,Bengaluru,2024-10-09,194,118,14,36
+EMP185,Jatin Parmar,jatin.parmar@techcorp.in,9573837091,HR,Senior HR Business Partner,Vadodara,2024-09-12,185,112,7,29
+EMP186,Chetan Bhatia,chetan.bhatia@techcorp.in,9363185727,Operations,Operations Analyst,Surat,2019-02-28,195,116,10,40
+EMP187,Darsh Gupta,darsh.gupta@techcorp.in,9746692594,Sales,Sales Representative,Rajkot,2019-09-19,209,127,10,34
+EMP188,Qasim Bhatia,qasim.bhatia@techcorp.in,9808138951,Legal,Legal Analyst,Gandhinagar,2017-05-13,196,136,8,37
+EMP189,Diya Mittal,diya.mittal@techcorp.in,9487890382,QA,Senior QA Engineer,Ahmedabad,2018-10-07,169,106,12,23
+EMP190,Jatin Naidu,jatin.naidu@techcorp.in,9242471530,Customer Support,Senior Support Specialist,Vadodara,2024-06-19,204,125,13,36
+EMP191,Indira Gupta,indira.gupta@techcorp.in,9468692329,Engineering,Senior Developer,Mumbai,2020-04-22,192,118,12,45
+EMP192,Riddhi Dubey,riddhi.dubey@techcorp.in,9338397188,Product,Senior Product Manager,Surat,2024-12-19,169,105,12,33
+EMP193,Riya Chauhan,riya.chauhan@techcorp.in,9398737794,Marketing,Senior Marketing Analyst,Gandhinagar,2024-03-07,191,126,13,29
+EMP194,Mansi Bhatia,mansi.bhatia@techcorp.in,9131384323,Finance,Financial Analyst,Bengaluru,2021-01-28,170,113,7,26
+EMP195,Chahat Shah,chahat.shah@techcorp.in,9927521406,HR,Senior HR Business Partner,Pune,2019-10-18,170,103,8,36
+EMP196,Gaurav Gohil,gaurav.gohil@techcorp.in,9196780688,Operations,Senior Operations Analyst,Vadodara,2023-09-28,205,117,11,45
+EMP197,Aarohi Jadeja,aarohi.jadeja@techcorp.in,9499454382,Sales,Senior Sales Representative,Rajkot,2019-01-26,186,120,8,29
+EMP198,Param Chauhan,param.chauhan@techcorp.in,9212343483,Legal,Senior Legal Analyst,Pune,2021-11-17,186,113,10,27
+EMP199,Lakshya Anand,lakshya.anand@techcorp.in,9727289363,QA,QA Engineer,Bengaluru,2017-10-03,201,126,7,31
+EMP200,Garima Vaghela,garima.vaghela@techcorp.in,9731155656,Customer Support,Senior Support Specialist,Mumbai,2020-06-11,167,102,13,26
+EMP201,Param Singhal,param.singhal@techcorp.in,9827382684,Engineering,Software Developer,Ahmedabad,2018-03-24,176,111,3,34
+EMP202,Ruchit Kapoor,ruchit.kapoor@techcorp.in,9405415651,Product,Senior Product Manager,Rajkot,2020-10-16,159,105,11,37
+EMP203,Atharva Nair,atharva.nair@techcorp.in,9334544934,Marketing,Senior Marketing Analyst,Pune,2024-05-28,167,110,11,24
+EMP204,Kabir Verma,kabir.verma@techcorp.in,9321589781,Finance,Senior Financial Analyst,Surat,2018-07-06,190,112,9,31
+EMP205,Bharti Singhal,bharti.singhal@techcorp.in,9769529820,HR,HR Business Partner,Vadodara,2020-10-14,194,124,14,32
+EMP206,Khyati Rajput,khyati.rajput@techcorp.in,9214180253,Operations,Senior Operations Analyst,Surat,2018-06-26,185,107,13,27
+EMP207,Eklavya Sharma,eklavya.sharma@techcorp.in,9349154004,Sales,Senior Sales Representative,Surat,2018-07-08,171,102,15,33
+EMP208,Hemal Chauhan,hemal.chauhan@techcorp.in,9313901203,Legal,Senior Legal Analyst,Mumbai,2023-10-20,171,103,11,31
+EMP209,Dhruvin Malhotra,dhruvin.malhotra@techcorp.in,9283414519,QA,QA Engineer,Bengaluru,2019-12-08,179,113,10,27
+EMP210,Kavya Krishnan,kavya.krishnan@techcorp.in,9598387841,Customer Support,Senior Support Specialist,Bengaluru,2021-06-23,176,118,8,28
+EMP211,Geetika Reddy,geetika.reddy@techcorp.in,9180963227,Engineering,Senior Developer,Ahmedabad,2020-08-17,187,107,16,38
+EMP212,Sai Venkat,sai.venkat@techcorp.in,9827990431,Product,Product Manager,Pune,2017-11-07,197,120,14,37
+EMP213,Harsh Venkat,harsh.venkat@techcorp.in,9733800448,Marketing,Marketing Analyst,Pune,2024-01-07,186,115,8,35
+EMP214,Tejas Desai,tejas.desai@techcorp.in,9366469189,Finance,Senior Financial Analyst,Pune,2019-03-21,140,94,3,29
+EMP215,Tejas Pillai,tejas.pillai@techcorp.in,9511157916,HR,HR Business Partner,Mumbai,2018-10-25,196,115,14,34
+EMP216,Chetan Mehta,chetan.mehta@techcorp.in,9910257526,Operations,Senior Operations Analyst,Rajkot,2023-09-13,158,103,5,27
+EMP217,Pooja Shah,pooja.shah@techcorp.in,9438541996,Sales,Sales Representative,Mumbai,2020-05-12,195,117,16,38
+EMP218,Ananya Mishra,ananya.mishra@techcorp.in,9607422555,Legal,Senior Legal Analyst,Gandhinagar,2024-06-20,188,116,11,27
+EMP219,Yuvraj Sawant,yuvraj.sawant@techcorp.in,9944483399,QA,Senior QA Engineer,Vadodara,2017-02-27,173,101,10,25
+EMP220,Atharva Parmar,atharva.parmar@techcorp.in,9898200091,Customer Support,Support Specialist,Mumbai,2021-08-02,196,114,11,38
+EMP221,Atharva Chauhan,atharva.chauhan@techcorp.in,9299857383,Engineering,Software Developer,Vadodara,2021-11-13,193,121,6,40
+EMP222,Naman Mehta,naman.mehta@techcorp.in,9307450914,Product,Product Manager,Gandhinagar,2024-10-19,195,119,13,32
+EMP223,Parth Makwana,parth.makwana@techcorp.in,9193717944,Marketing,Marketing Analyst,Bengaluru,2019-04-06,207,123,7,37
+EMP224,Bharat Menon,bharat.menon@techcorp.in,9225925001,Finance,Financial Analyst,Bengaluru,2018-08-23,177,116,13,41
+EMP225,Divya Joshi,divya.joshi@techcorp.in,9906718722,HR,HR Business Partner,Vadodara,2023-04-27,201,135,11,43
+EMP226,Tejas Tiwari,tejas.tiwari@techcorp.in,9874892701,Operations,Senior Operations Analyst,Vadodara,2019-01-09,179,119,7,32
+EMP227,Riddhi Reddy,riddhi.reddy@techcorp.in,9603784886,Sales,Sales Representative,Rajkot,2023-08-19,169,106,11,31
+EMP228,Zalak Trivedi,zalak.trivedi@techcorp.in,9654238438,Legal,Senior Legal Analyst,Bengaluru,2017-11-12,184,110,11,32
+EMP229,Rahul Bansal,rahul.bansal@techcorp.in,9971575967,QA,Senior QA Engineer,Vadodara,2022-01-01,153,91,14,29
+EMP230,Shruti Subramanian,shruti.subramanian@techcorp.in,9650636877,Customer Support,Senior Support Specialist,Ahmedabad,2022-09-14,185,114,12,26
+EMP231,Geetika Malhotra,geetika.malhotra@techcorp.in,9498538963,Engineering,Software Developer,Rajkot,2018-06-19,176,105,8,24
+EMP232,Tanvi Kathiriya,tanvi.kathiriya@techcorp.in,9251654615,Product,Senior Product Manager,Surat,2017-09-12,192,125,9,35
+EMP233,Lakshya Mehta,lakshya.mehta@techcorp.in,9451103749,Marketing,Senior Marketing Analyst,Gandhinagar,2021-03-24,156,93,15,31
+EMP234,Pranav Mishra,pranav.mishra@techcorp.in,9804900115,Finance,Financial Analyst,Ahmedabad,2021-02-18,190,121,13,26
+EMP235,Kiran Kathiriya,kiran.kathiriya@techcorp.in,9569249041,HR,Senior HR Business Partner,Surat,2021-09-04,153,101,6,33
+EMP236,Indira Yadav,indira.yadav@techcorp.in,9266441044,Operations,Senior Operations Analyst,Vadodara,2022-11-04,173,103,12,26
+EMP237,Dhruvin Solanki,dhruvin.solanki@techcorp.in,9378044741,Sales,Sales Representative,Pune,2018-04-27,164,91,8,21
+EMP238,Farhan Singhal,farhan.singhal@techcorp.in,9300758274,Legal,Senior Legal Analyst,Mumbai,2021-08-28,185,111,7,28
+EMP239,Ananya Makwana,ananya.makwana@techcorp.in,9115394212,QA,Senior QA Engineer,Vadodara,2017-02-08,188,118,17,38
+EMP240,Utsav Solanki,utsav.solanki@techcorp.in,9580609220,Customer Support,Support Specialist,Rajkot,2023-12-15,207,120,12,30
+EMP241,Simran Singh,simran.singh@techcorp.in,9635258423,Engineering,Senior Developer,Mumbai,2021-08-28,185,109,10,30
+EMP242,Ananya Shah,ananya.shah@techcorp.in,9732328816,Product,Product Manager,Ahmedabad,2022-07-09,186,119,11,36
+EMP243,Chirag Nair,chirag.nair@techcorp.in,9426764815,Marketing,Senior Marketing Analyst,Surat,2019-10-02,167,93,6,26
+EMP244,Veer Pillai,veer.pillai@techcorp.in,9955120642,Finance,Financial Analyst,Mumbai,2020-03-08,168,101,9,30
+EMP245,Alka Verma,alka.verma@techcorp.in,9325177362,HR,Senior HR Business Partner,Ahmedabad,2017-12-26,186,117,7,38
+EMP246,Aarav Pillai,aarav.pillai@techcorp.in,9132348030,Operations,Operations Analyst,Pune,2024-05-23,183,114,9,27
+EMP247,Drashti Singh,drashti.singh@techcorp.in,9675959871,Sales,Sales Representative,Rajkot,2023-04-24,193,125,7,35
+EMP248,Swati Shinde,swati.shinde@techcorp.in,9816530083,Legal,Senior Legal Analyst,Rajkot,2018-06-02,188,109,16,33
+EMP249,Aarav Khanna,aarav.khanna@techcorp.in,9188086121,QA,Senior QA Engineer,Surat,2017-11-13,176,96,14,33
+EMP250,Aarohi Yadav,aarohi.yadav@techcorp.in,9680315516,Customer Support,Senior Support Specialist,Surat,2020-06-15,185,115,15,36
+EMP251,Nitin Bhatt,nitin.bhatt@techcorp.in,9374733696,Engineering,Senior Developer,Pune,2020-08-10,181,110,3,28
+EMP252,Hetvi Murthy,hetvi.murthy@techcorp.in,9929856694,Product,Senior Product Manager,Gandhinagar,2022-08-28,201,127,7,35
+EMP253,Sumit Malhotra,sumit.malhotra@techcorp.in,9622753601,Marketing,Senior Marketing Analyst,Vadodara,2022-04-19,199,117,7,36
+EMP254,Qasim Pawar,qasim.pawar@techcorp.in,9812616391,Finance,Senior Financial Analyst,Gandhinagar,2024-09-10,203,115,8,40
+EMP255,Khyati Kulkarni,khyati.kulkarni@techcorp.in,9427364203,HR,HR Business Partner,Mumbai,2020-05-06,164,101,8,32
+EMP256,Foram Trivedi,foram.trivedi@techcorp.in,9419447690,Operations,Operations Analyst,Ahmedabad,2021-07-22,176,114,9,32
+EMP257,Komal Anand,komal.anand@techcorp.in,9581790487,Sales,Senior Sales Representative,Surat,2023-03-13,195,124,9,33
+EMP258,Dev Murthy,dev.murthy@techcorp.in,9737874221,Legal,Senior Legal Analyst,Bengaluru,2020-01-01,192,115,13,41
+EMP259,Girish Vaghela,girish.vaghela@techcorp.in,9683498294,QA,QA Engineer,Rajkot,2017-02-02,186,106,10,33
+EMP260,Hardik Rathod,hardik.rathod@techcorp.in,9660983373,Customer Support,Support Team Lead,Rajkot,2021-04-22,195,121,13,36
+EMP261,Preet Singhal,preet.singhal@techcorp.in,9456310674,Engineering,Software Developer,Pune,2018-02-04,193,115,14,36
+EMP262,Hema Verma,hema.verma@techcorp.in,9318942209,Product,Product Manager,Rajkot,2017-03-18,181,114,10,22
+EMP263,Jagdish Kumar,jagdish.kumar@techcorp.in,9865106716,Marketing,Marketing Analyst,Mumbai,2019-05-06,199,122,14,40
+EMP264,Reyansh Naidu,reyansh.naidu@techcorp.in,9463844216,Finance,Senior Financial Analyst,Gandhinagar,2018-02-07,174,116,8,27
+EMP265,Chahat Agarwal,chahat.agarwal@techcorp.in,9415482018,HR,Senior HR Business Partner,Pune,2020-06-10,180,121,10,29
+EMP266,Hetvi Dubey,hetvi.dubey@techcorp.in,9671397771,Operations,Operations Manager,Surat,2023-11-04,189,120,15,42
+EMP267,Shrey Kathiriya,shrey.kathiriya@techcorp.in,9101717706,Sales,Sales Representative,Bengaluru,2018-06-05,166,102,9,24
+EMP268,Diya Patil,diya.patil@techcorp.in,9565246225,Legal,Senior Legal Analyst,Bengaluru,2022-02-13,175,106,14,35
+EMP269,Diya Chauhan,diya.chauhan@techcorp.in,9607515684,QA,Senior QA Engineer,Pune,2022-08-20,197,112,13,37
+EMP270,Bharti Singh,bharti.singh@techcorp.in,9730461103,Customer Support,Senior Support Specialist,Bengaluru,2021-02-28,179,91,11,36
+EMP271,Priya Vaghela,priya.vaghela@techcorp.in,9809101591,Engineering,Tech Lead,Vadodara,2024-05-06,180,113,8,28
+EMP272,Deepa Jadeja,deepa.jadeja@techcorp.in,9515370656,Product,Product Manager,Surat,2017-10-10,180,123,8,37
+EMP273,Shaurya Shah,shaurya.shah@techcorp.in,9172315657,Marketing,Marketing Analyst,Ahmedabad,2017-07-13,172,104,12,24
+EMP274,Zalak Makwana,zalak.makwana@techcorp.in,9451215180,Finance,Senior Financial Analyst,Pune,2018-09-21,183,107,16,35
+EMP275,Divya Venkat,divya.venkat@techcorp.in,9947063179,HR,Senior HR Business Partner,Surat,2023-08-07,187,124,8,32

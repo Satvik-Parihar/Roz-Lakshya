@@ -4,23 +4,25 @@ from sqlalchemy.future import select
 from datetime import datetime, timedelta, timezone
 from app.database import get_db
 from app.models import Task, User
-from app.schemas import TaskCreate, TaskUpdate, TaskResponse
+from app.schemas import TaskCreate, TaskUpdate, TaskResponse, TaskSequenceItem
 from typing import Optional, List
 import asyncio
 
 # Safe import of AI engine — fallback if P2 not ready
 try:
-    from app.services.ai_engine import compute_priority_score
+    from app.services.ai_engine import compute_priority_score, suggest_execution_order
 except ImportError:
-    def compute_priority_score(task):
-        return 50.0, "AI engine not yet available"
+    async def compute_priority_score(task):
+        return {"score": 50.0, "reasoning": "AI engine not yet available"}
+    async def suggest_execution_order(tasks):
+        return []
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"], redirect_slashes=False)
 
 def get_priority_label(score: float) -> str:
-    if score > 75:
+    if score >= 70:
         return "High"
-    elif score >= 50:
+    elif score >= 40:
         return "Medium"
     else:
         return "Low"
@@ -58,7 +60,16 @@ async def create_task(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
     db.add(task)
     await db.flush()  # get task.id before commit
 
-    ai_result = compute_priority_score(task)
+    ai_result = await compute_priority_score({
+        "id": task.id,
+        "title": task.title,
+        "deadline_days": task.deadline_days,
+        "effort": task.effort,
+        "impact": task.impact,
+        "workload": task.workload,
+        "complaint_boost": task.complaint_boost,
+        "status": task.status,
+    })
     score = ai_result.get("score", 50.0)
     reasoning = ai_result.get("reasoning", "Score unavailable")
     task.priority_score = score
@@ -135,7 +146,16 @@ async def update_task(task_id: int, payload: TaskUpdate, db: AsyncSession = Depe
 
     scoring_fields = {"deadline_days", "effort", "impact", "workload"}
     if scoring_fields.intersection(update_data.keys()):
-        ai_result = compute_priority_score(task)
+        ai_result = await compute_priority_score({
+            "id": task.id,
+            "title": task.title,
+            "deadline_days": task.deadline_days,
+            "effort": task.effort,
+            "impact": task.impact,
+            "workload": task.workload,
+            "complaint_boost": task.complaint_boost,
+            "status": task.status,
+        })
         score = ai_result.get("score", 50.0)
         reasoning = ai_result.get("reasoning", "Score unavailable")
         task.priority_score = score
@@ -178,7 +198,16 @@ async def get_task_score(task_id: int, db: AsyncSession = Depends(get_db)):
     task = res.scalars().first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    ai_result = compute_priority_score(task)
+    ai_result = await compute_priority_score({
+        "id": task.id,
+        "title": task.title,
+        "deadline_days": task.deadline_days,
+        "effort": task.effort,
+        "impact": task.impact,
+        "workload": task.workload,
+        "complaint_boost": task.complaint_boost,
+        "status": task.status,
+    })
     score = ai_result.get("score", 50.0)
     reasoning = ai_result.get("reasoning", "Score unavailable")
     return {
@@ -187,3 +216,29 @@ async def get_task_score(task_id: int, db: AsyncSession = Depends(get_db)):
         "recomputed_score": score,
         "reasoning": reasoning
     }
+
+# PHASE 3: GET /tasks/sequence/{user_id} — AI execution order
+@router.get("/sequence/{user_id}", response_model=List[TaskSequenceItem])
+async def get_task_sequence(user_id: int, db: AsyncSession = Depends(get_db)):
+    # Fetch all non-done tasks for this user
+    query = select(Task).filter(Task.assignee_id == user_id, Task.status != "done")
+    result = await db.execute(query)
+    tasks = result.scalars().all()
+    
+    if not tasks:
+        return []
+        
+    # Convert tasks to simple dicts for AI
+    task_dicts = []
+    for t in tasks:
+        task_dicts.append({
+            "id": t.id,
+            "title": t.title,
+            "priority_score": t.priority_score,
+            "deadline": str(t.created_at + timedelta(days=t.deadline_days)) if t.created_at else None,
+            "effort": t.effort,
+            "impact": t.impact,
+            "status": t.status
+        })
+        
+    return await suggest_execution_order(task_dicts)
