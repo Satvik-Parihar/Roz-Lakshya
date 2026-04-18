@@ -4,16 +4,18 @@ from sqlalchemy.future import select
 from datetime import datetime, timedelta, timezone
 from app.database import get_db
 from app.models import Task, User
-from app.schemas import TaskCreate, TaskUpdate, TaskResponse
+from app.schemas import TaskCreate, TaskUpdate, TaskResponse, TaskSequenceItem
 from typing import Optional, List
 import asyncio
 
 # Safe import of AI engine — fallback if P2 not ready
 try:
-    from app.services.ai_engine import compute_priority_score
+    from app.services.ai_engine import compute_priority_score, suggest_execution_order
 except ImportError:
     def compute_priority_score(task):
-        return 50.0, "AI engine not yet available"
+        return {"score": 50.0, "reasoning": "AI engine not yet available"}
+    async def suggest_execution_order(tasks):
+        return []
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"], redirect_slashes=False)
 
@@ -187,3 +189,29 @@ async def get_task_score(task_id: int, db: AsyncSession = Depends(get_db)):
         "recomputed_score": score,
         "reasoning": reasoning
     }
+
+# PHASE 3: GET /tasks/sequence/{user_id} — AI execution order
+@router.get("/sequence/{user_id}", response_model=List[TaskSequenceItem])
+async def get_task_sequence(user_id: int, db: AsyncSession = Depends(get_db)):
+    # Fetch all non-done tasks for this user
+    query = select(Task).filter(Task.assignee_id == user_id, Task.status != "done")
+    result = await db.execute(query)
+    tasks = result.scalars().all()
+    
+    if not tasks:
+        return []
+        
+    # Convert tasks to simple dicts for AI
+    task_dicts = []
+    for t in tasks:
+        task_dicts.append({
+            "id": t.id,
+            "title": t.title,
+            "priority_score": t.priority_score,
+            "deadline": str(t.created_at + timedelta(days=t.deadline_days)) if t.created_at else None,
+            "effort": t.effort,
+            "impact": t.impact,
+            "status": t.status
+        })
+        
+    return await suggest_execution_order(task_dicts)

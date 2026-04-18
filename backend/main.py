@@ -5,14 +5,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 from app.routers import tasks, complaints, dashboard, alerts, users
+from app.services.scheduler import start_scheduler, stop_scheduler
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-
+    start_scheduler()
     yield
-    # Shutdown (add cleanup here if needed)
+    # Shutdown
+    stop_scheduler()
 
 
 app = FastAPI(

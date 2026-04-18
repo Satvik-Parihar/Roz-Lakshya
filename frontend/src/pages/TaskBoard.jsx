@@ -33,10 +33,10 @@ function CreateTaskModal({ onClose }) {
     try {
       const payload = {
         ...form,
-        effort:   form.effort   !== '' ? Number(form.effort)   : undefined,
-        impact:   form.impact   !== '' ? Number(form.impact)   : undefined,
+        effort: form.effort !== '' ? Number(form.effort) : undefined,
+        impact: form.impact !== '' ? Number(form.impact) : undefined,
         deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
-        status:   'todo',
+        status: 'todo',
       };
       await createTask(payload);
       onClose();
@@ -59,12 +59,12 @@ function CreateTaskModal({ onClose }) {
         </div>
         <form onSubmit={submit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
           {[
-            { name: 'title',       label: 'Title',             type: 'text',          required: true  },
-            { name: 'description', label: 'Description',       type: 'textarea'                       },
-            { name: 'assignee',    label: 'Assignee',          type: 'text'                           },
-            { name: 'deadline',    label: 'Deadline',          type: 'datetime-local'                 },
-            { name: 'effort',      label: 'Effort (1-10)',     type: 'number', min: 1, max: 10        },
-            { name: 'impact',      label: 'Impact (1-10)',     type: 'number', min: 1, max: 10        },
+            { name: 'title', label: 'Title', type: 'text', required: true },
+            { name: 'description', label: 'Description', type: 'textarea' },
+            { name: 'assignee', label: 'Assignee', type: 'text' },
+            { name: 'deadline', label: 'Deadline', type: 'datetime-local' },
+            { name: 'effort', label: 'Effort (1-10)', type: 'number', min: 1, max: 10 },
+            { name: 'impact', label: 'Impact (1-10)', type: 'number', min: 1, max: 10 },
           ].map(({ name, label, type, required, min, max }) => (
             <div key={name} className="flex flex-col gap-1">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</label>
@@ -92,10 +92,10 @@ function CreateTaskModal({ onClose }) {
 
 // ─── Filter bar ────────────────────────────────────────────────────────────────
 const STATUS_FILTERS = [
-  { value: 'all',         label: 'All'         },
-  { value: 'todo',        label: 'Todo'        },
+  { value: 'all', label: 'All' },
+  { value: 'todo', label: 'Todo' },
   { value: 'in_progress', label: 'In Progress' },
-  { value: 'done',        label: 'Done'        },
+  { value: 'done', label: 'Done' },
 ];
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
@@ -107,6 +107,8 @@ export default function TaskBoard() {
 
   useEffect(() => {
     fetchTasks();
+    const interval = setInterval(fetchTasks, 5 * 60 * 1000); // 5 min
+    return () => clearInterval(interval);
   }, [fetchTasks]);
 
   const filtered = tasks.filter((t) => {
@@ -130,7 +132,7 @@ export default function TaskBoard() {
               📋 Task Board
             </h1>
             <p className="text-xs text-gray-400 mt-0.5">
-              {tasks.length} task{tasks.length !== 1 ? 's' : ''} · sorted by AI priority
+              {tasks.length} task{tasks.length !== 1 ? 's' : ''} · Sorted by Work Priority
             </p>
           </div>
           <button

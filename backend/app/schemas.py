@@ -43,3 +43,31 @@ class TaskResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class TaskSequenceItem(BaseModel):
+    task_id: int
+    sequence: int
+    reason: str
+
+class ComplaintCreate(BaseModel):
+    text: str
+    channel: str # email | call | direct
+
+class ComplaintUpdate(BaseModel):
+    status: str # open | in-progress | resolved
+
+class ComplaintResponse(BaseModel):
+    id: int
+    text: str
+    channel: str
+    category: Optional[str]
+    priority: Optional[str]
+    urgency_score: float
+    resolution_steps: Optional[list]
+    linked_task_id: Optional[int]
+    sla_hours: Optional[int]
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
