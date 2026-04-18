@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useTaskStore from '../store/useTaskStore';
+import { usersApi } from '../api/taskApi';
 import TaskCard from '../components/TaskCard';
 import PriorityHeader from '../components/PriorityHeader';
 import PriorityFooter from '../components/PriorityFooter';
@@ -16,15 +17,102 @@ function TaskSkeleton() {
 }
 
 // ─── Create Task Modal ─────────────────────────────────────────────────────────
-const EMPTY_TASK = { id: null, title: '', description: '', assignee: '', deadline: '', effort: '', impact: '', status: 'todo', priority_score: 0, complaint_boost: 0, reasoning: '' };
-
 function CreateTaskModal({ onClose }) {
   const { createTask } = useTaskStore();
-  const [form, setForm] = useState({ title: '', description: '', assignee: '', deadline: '', effort: '', impact: '' });
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    assignee_id: '',
+    deadline: '',
+    effort: '',
+    impact: '',
+    workload: 5,
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState('');
+  const [assigneeSearch, setAssigneeSearch] = useState('');
+  const [assigneeOpen, setAssigneeOpen] = useState(false);
+  const assigneeMenuRef = useRef(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchUsers = async () => {
+      setUsersLoading(true);
+      setUsersError('');
+      try {
+        const response = await usersApi.getAll();
+        if (!mounted) return;
+        const items = Array.isArray(response?.data) ? response.data : [];
+        setUsers(items);
+      } catch {
+        if (!mounted) return;
+        setUsersError('Unable to load assignees right now.');
+        setUsers([]);
+      } finally {
+        if (mounted) setUsersLoading(false);
+      }
+    };
+
+    fetchUsers();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (!assigneeMenuRef.current) return;
+      if (!assigneeMenuRef.current.contains(event.target)) {
+        setAssigneeOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  const selectedAssignee = useMemo(
+    () => users.find((user) => String(user.id) === String(form.assignee_id)) || null,
+    [users, form.assignee_id],
+  );
+
+  const filteredUsers = useMemo(() => {
+    const query = assigneeSearch.trim().toLowerCase();
+    if (!query) return users.slice(0, 100);
+
+    return users
+      .filter((user) => {
+        const name = String(user.name || '').toLowerCase();
+        const email = String(user.email || '').toLowerCase();
+        const idText = String(user.id);
+        return name.includes(query) || email.includes(query) || idText.includes(query);
+      })
+      .slice(0, 100);
+  }, [users, assigneeSearch]);
 
   const handle = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+
+  const getAssigneeLabel = (user) => {
+    if (!user) return '';
+    if (user.email) return `${user.name} (${user.email})`;
+    return `${user.name} (ID ${user.id})`;
+  };
+
+  const handleAssigneeSelect = (user) => {
+    setForm((prev) => ({ ...prev, assignee_id: String(user.id) }));
+    setAssigneeSearch(getAssigneeLabel(user));
+    setAssigneeOpen(false);
+  };
+
+  const clearAssignee = () => {
+    setForm((prev) => ({ ...prev, assignee_id: '' }));
+    setAssigneeSearch('');
+    setAssigneeOpen(false);
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -36,8 +124,8 @@ function CreateTaskModal({ onClose }) {
         ...form,
         effort: form.effort !== '' ? Number(form.effort) : undefined,
         impact: form.impact !== '' ? Number(form.impact) : undefined,
+        workload: form.workload !== '' ? Number(form.workload) : undefined,
         deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
-        status: 'todo',
       };
       await createTask(payload);
       onClose();
@@ -59,13 +147,80 @@ function CreateTaskModal({ onClose }) {
           <button onClick={onClose} className="text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)] transition-colors text-xl">✕</button>
         </div>
         <form onSubmit={submit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+          <div className="flex flex-col gap-1" ref={assigneeMenuRef}>
+            <label className="text-xs font-semibold uppercase tracking-wide text-[color:var(--on-surface-variant)]">Assignee (Optional)</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={assigneeSearch}
+                onFocus={() => setAssigneeOpen(true)}
+                onChange={(e) => {
+                  setAssigneeSearch(e.target.value);
+                  setAssigneeOpen(true);
+                  if (form.assignee_id) setForm((prev) => ({ ...prev, assignee_id: '' }));
+                }}
+                placeholder="Search by name, email, or ID"
+                className="w-full rounded-lg border border-[color:var(--outline-variant)] px-3 py-2 pr-20 text-sm text-[color:var(--on-surface)] focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)]"
+              />
+              {(assigneeSearch || selectedAssignee) && (
+                <button
+                  type="button"
+                  onClick={clearAssignee}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-medium text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-low)]"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {assigneeOpen && (
+              <div className="max-h-56 overflow-y-auto rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] shadow-lg">
+                {usersLoading ? (
+                  <p className="px-3 py-2 text-sm text-[color:var(--on-surface-variant)]">Loading users...</p>
+                ) : usersError ? (
+                  <p className="px-3 py-2 text-sm text-red-600">{usersError}</p>
+                ) : filteredUsers.length === 0 ? (
+                  <p className="px-3 py-2 text-sm text-[color:var(--on-surface-variant)]">No matching users found.</p>
+                ) : (
+                  <ul>
+                    {filteredUsers.map((user) => {
+                      const active = String(form.assignee_id) === String(user.id);
+                      return (
+                        <li key={user.id}>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleAssigneeSelect(user)}
+                            className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                              active
+                                ? 'bg-[color:var(--surface-container-high)] text-[color:var(--on-surface)]'
+                                : 'text-[color:var(--on-surface)] hover:bg-[color:var(--surface-container-low)]'
+                            }`}
+                          >
+                            <p className="font-medium">{user.name}</p>
+                            <p className="text-xs text-[color:var(--on-surface-variant)]">
+                              {user.email || `ID ${user.id}`} • {user.role}
+                            </p>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
+            {selectedAssignee && !assigneeOpen && (
+              <p className="text-xs text-[color:var(--on-surface-variant)]">Selected: {getAssigneeLabel(selectedAssignee)}</p>
+            )}
+          </div>
+
           {[
             { name: 'title', label: 'Title', type: 'text', required: true },
             { name: 'description', label: 'Description', type: 'textarea' },
-            { name: 'assignee', label: 'Assignee', type: 'text' },
             { name: 'deadline', label: 'Deadline', type: 'datetime-local' },
-            { name: 'effort', label: 'Effort (1-10)', type: 'number', min: 1, max: 10 },
+            { name: 'effort', label: 'Effort (1-19)', type: 'number', min: 1, max: 19 },
             { name: 'impact', label: 'Impact (1-10)', type: 'number', min: 1, max: 10 },
+            { name: 'workload', label: 'Workload (1-10)', type: 'number', min: 1, max: 10 },
           ].map(({ name, label, type, required, min, max }) => (
             <div key={name} className="flex flex-col gap-1">
               <label className="text-xs font-semibold uppercase tracking-wide text-[color:var(--on-surface-variant)]">{label}</label>
@@ -95,9 +250,11 @@ function CreateTaskModal({ onClose }) {
 const STATUS_FILTERS = [
   { value: 'all', label: 'All' },
   { value: 'todo', label: 'Todo' },
-  { value: 'in_progress', label: 'In Progress' },
+  { value: 'in-progress', label: 'In Progress' },
   { value: 'done', label: 'Done' },
 ];
+
+const normalizeStatus = (status) => String(status || 'todo').toLowerCase().replace(/_/g, '-');
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function TaskBoard() {
@@ -113,7 +270,7 @@ export default function TaskBoard() {
   }, [fetchTasks]);
 
   const filtered = tasks.filter((t) => {
-    const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || normalizeStatus(t.status) === statusFilter;
     const q = search.toLowerCase();
     const matchesSearch =
       !q ||

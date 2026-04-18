@@ -4,6 +4,7 @@ import StatusButtons from './StatusButtons';
 
 const statusMeta = {
   todo:        { label: 'Todo',        cls: 'bg-[color:var(--surface-container)] text-[color:var(--on-surface-variant)]' },
+  'in-progress': { label: 'In Progress', cls: 'bg-[color:var(--secondary-container)] text-[color:var(--on-secondary-container)]' },
   in_progress: { label: 'In Progress', cls: 'bg-[color:var(--secondary-container)] text-[color:var(--on-secondary-container)]' },
   done:        { label: 'Done',        cls: 'bg-emerald-100 text-emerald-700' },
 };

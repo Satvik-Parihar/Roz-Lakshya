@@ -19,6 +19,8 @@ except ImportError:
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"], redirect_slashes=False)
 
+ALLOWED_TASK_STATUSES = {"todo", "in-progress", "done"}
+
 def get_priority_label(score: float) -> str:
     if score >= 70:
         return "High"
@@ -26,6 +28,20 @@ def get_priority_label(score: float) -> str:
         return "Medium"
     else:
         return "Low"
+
+
+def normalize_task_status(status: Optional[str], default: str = "todo") -> str:
+    if status is None:
+        return default
+
+    normalized = str(status).strip().lower().replace("_", "-")
+    if normalized in ALLOWED_TASK_STATUSES:
+        return normalized
+
+    raise HTTPException(
+        status_code=422,
+        detail="Invalid status. Allowed values: todo, in-progress, done",
+    )
 
 async def enrich_task(task: Task, db: AsyncSession) -> dict:
     """Convert Task ORM object to TaskResponse-compatible dict"""
@@ -56,7 +72,16 @@ async def create_task(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
     new_task_id = (last_task.task_id + 1) if last_task else 1
 
     payload_dict = payload.model_dump() if hasattr(payload, 'model_dump') else payload.dict()
-    task = Task(**payload_dict, task_id=new_task_id, status="todo", complaint_boost=0.0)
+    baseline_score = 50.0
+    task = Task(
+        **payload_dict,
+        task_id=new_task_id,
+        status="todo",
+        complaint_boost=0.0,
+        priority_score=baseline_score,
+        priority_label=get_priority_label(baseline_score),
+        ai_reasoning="Score unavailable",
+    )
     db.add(task)
     await db.flush()  # get task.id before commit
 
@@ -70,7 +95,7 @@ async def create_task(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
         "complaint_boost": task.complaint_boost,
         "status": task.status,
     })
-    score = ai_result.get("score", 50.0)
+    score = float(ai_result.get("score", baseline_score))
     reasoning = ai_result.get("reasoning", "Score unavailable")
     task.priority_score = score
     task.priority_label = get_priority_label(score)
@@ -90,7 +115,7 @@ async def get_tasks(user_id: Optional[int] = None, limit: int = 100, db: AsyncSe
     from sqlalchemy.orm import joinedload
     
     query = select(Task).options(joinedload(Task.assignee))
-    if user_id:
+    if user_id is not None:
         query = query.filter(Task.assignee_id == user_id)
     
     # Apply limit to prevent hanging with 50,000 tasks
@@ -141,10 +166,14 @@ async def update_task(task_id: int, payload: TaskUpdate, db: AsyncSession = Depe
         raise HTTPException(status_code=404, detail="Task not found")
 
     update_data = payload.model_dump(exclude_unset=True) if hasattr(payload, 'model_dump') else payload.dict(exclude_unset=True)
+
+    if "status" in update_data and update_data["status"] is not None:
+        update_data["status"] = normalize_task_status(update_data["status"], default=task.status or "todo")
+
     for field, value in update_data.items():
         setattr(task, field, value)
 
-    scoring_fields = {"deadline_days", "effort", "impact", "workload"}
+    scoring_fields = {"deadline_days", "effort", "impact", "workload", "status"}
     if scoring_fields.intersection(update_data.keys()):
         ai_result = await compute_priority_score({
             "id": task.id,

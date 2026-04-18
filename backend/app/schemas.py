@@ -28,6 +28,13 @@ class SignupResponse(BaseModel):
     email: str
     role: str
 
+
+class UserListItem(BaseModel):
+    id: int
+    name: str
+    email: Optional[str] = None
+    role: str
+
 class TaskCreate(BaseModel):
     title: str
     description: Optional[str] = None

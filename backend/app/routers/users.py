@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models import User
-from app.schemas import LoginRequest, LoginResponse, SignupRequest, SignupResponse
+from app.schemas import LoginRequest, LoginResponse, SignupRequest, SignupResponse, UserListItem
 
 router = APIRouter(
     prefix="/users",
@@ -127,6 +127,22 @@ async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
         email=user.email or normalized_email,
         role=user.role,
     )
+
+
+@router.get("/", response_model=list[UserListItem])
+async def list_users(limit: int = 500, db: AsyncSession = Depends(get_db)):
+    safe_limit = max(1, min(limit, 2000))
+    users_result = await db.execute(select(User).order_by(User.name.asc(), User.id.asc()).limit(safe_limit))
+    users = users_result.scalars().all()
+    return [
+        UserListItem(
+            id=user.id,
+            name=user.name,
+            email=user.email,
+            role=user.role,
+        )
+        for user in users
+    ]
 
 
 @router.post("/login", response_model=LoginResponse)

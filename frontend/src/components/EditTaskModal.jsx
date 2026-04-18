@@ -1,36 +1,38 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import useTaskStore from '../store/useTaskStore';
 
 const FIELDS = [
   { name: 'title',       label: 'Title',       type: 'text',   required: true  },
   { name: 'description', label: 'Description', type: 'textarea' },
-  { name: 'assignee',    label: 'Assignee',    type: 'text'    },
-  { name: 'deadline',    label: 'Deadline',    type: 'datetime-local' },
-  { name: 'effort',      label: 'Effort (1-10)',  type: 'number', min: 1, max: 10 },
+  { name: 'assignee_id', label: 'Assignee ID', type: 'number', min: 1 },
+  { name: 'deadline_days', label: 'Deadline (Days)', type: 'number', min: 1, max: 30 },
+  { name: 'effort',      label: 'Effort (1-19)',  type: 'number', min: 1, max: 19 },
   { name: 'impact',      label: 'Impact (1-10)',  type: 'number', min: 1, max: 10 },
+  { name: 'workload',    label: 'Workload (1-10)', type: 'number', min: 1, max: 10 },
 ];
-
-function toLocalDatetime(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return '';
-  // format to YYYY-MM-DDTHH:mm
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export default function EditTaskModal({ task, onClose }) {
   const { updateTask } = useTaskStore();
   const [form, setForm] = useState({
     title:       task.title       ?? '',
     description: task.description ?? '',
-    assignee:    task.assignee    ?? '',
-    deadline:    toLocalDatetime(task.deadline),
+    assignee_id: task.assignee_id ?? '',
+    deadline_days: task.deadline_days ?? '',
     effort:      task.effort      ?? '',
     impact:      task.impact      ?? '',
+    workload:    task.workload    ?? '',
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
 
   const handle = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -42,9 +44,11 @@ export default function EditTaskModal({ task, onClose }) {
     try {
       const payload = {
         ...form,
+        assignee_id: form.assignee_id !== '' ? Number(form.assignee_id) : null,
+        deadline_days: form.deadline_days !== '' ? Number(form.deadline_days) : undefined,
         effort: form.effort !== '' ? Number(form.effort) : undefined,
         impact: form.impact !== '' ? Number(form.impact) : undefined,
-        deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
+        workload: form.workload !== '' ? Number(form.workload) : undefined,
       };
       await updateTask(task.id, payload);
       onClose();
@@ -55,11 +59,15 @@ export default function EditTaskModal({ task, onClose }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/45 backdrop-blur-md"
         onClick={onClose}
       />
 
@@ -131,6 +139,7 @@ export default function EditTaskModal({ task, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
