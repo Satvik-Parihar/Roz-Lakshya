@@ -63,13 +63,13 @@ export default function EditTaskModal({ task, onClose }) {
         onClick={onClose}
       />
 
-      <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+      <div className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col rounded-xl border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">Edit Task</h2>
+        <div className="flex items-center justify-between border-b border-[color:var(--outline-variant)]/50 px-6 py-4">
+          <h2 className="text-lg font-bold text-[color:var(--on-surface)]">Edit Task</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-700 transition-colors text-xl leading-none"
+            className="text-xl leading-none text-[color:var(--on-surface-variant)] transition-colors hover:text-[color:var(--on-surface)]"
           >
             ✕
           </button>
@@ -88,7 +88,7 @@ export default function EditTaskModal({ task, onClose }) {
                   value={form[name]}
                   onChange={handle}
                   rows={3}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+                  className="resize-none rounded-lg border border-[color:var(--outline-variant)] px-3 py-2 text-sm text-[color:var(--on-surface)] focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)]"
                 />
               </div>
             ) : (
@@ -104,7 +104,7 @@ export default function EditTaskModal({ task, onClose }) {
                   required={required}
                   min={min}
                   max={max}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="rounded-lg border border-[color:var(--outline-variant)] px-3 py-2 text-sm text-[color:var(--on-surface)] focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)]"
                 />
               </div>
             )
@@ -114,18 +114,18 @@ export default function EditTaskModal({ task, onClose }) {
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+        <div className="flex items-center justify-end gap-3 border-t border-[color:var(--outline-variant)]/50 px-6 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-[color:var(--on-surface-variant)] transition-colors hover:bg-[color:var(--surface-container-low)]"
           >
             Cancel
           </button>
           <button
             onClick={submit}
             disabled={busy}
-            className="px-5 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-60"
+            className="rounded-lg bg-[color:var(--on-surface)] px-5 py-2 text-sm font-semibold text-[color:var(--surface-container-lowest)] transition-colors hover:bg-[color:var(--inverse-surface)] disabled:opacity-60"
           >
             {busy ? 'Saving…' : 'Save Changes'}
           </button>

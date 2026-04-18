@@ -3,16 +3,16 @@ import CountdownTimer from './CountdownTimer';
 import StatusButtons from './StatusButtons';
 
 const statusMeta = {
-  todo:        { label: 'Todo',        cls: 'bg-gray-100 text-gray-600'   },
-  in_progress: { label: 'In Progress', cls: 'bg-blue-100 text-blue-700'   },
-  done:        { label: 'Done',        cls: 'bg-green-100 text-green-700'  },
+  todo:        { label: 'Todo',        cls: 'bg-[color:var(--surface-container)] text-[color:var(--on-surface-variant)]' },
+  in_progress: { label: 'In Progress', cls: 'bg-[color:var(--secondary-container)] text-[color:var(--on-secondary-container)]' },
+  done:        { label: 'Done',        cls: 'bg-emerald-100 text-emerald-700' },
 };
 
 export default function TaskExpandView({ task }) {
   const sm = statusMeta[task.status] ?? statusMeta.todo;
 
   return (
-    <div className="mt-4 pt-4 border-t border-gray-100 space-y-4 animate-fade-in">
+    <div className="mt-4 space-y-4 border-t border-[color:var(--outline-variant)]/40 pt-4 animate-fade-in">
       {/* Meta row */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Status badge */}
@@ -27,7 +27,7 @@ export default function TaskExpandView({ task }) {
         {task.complaint_boost > 0 && (
           <span
             title="Priority boosted by complaint"
-            className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 cursor-help"
+            className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 cursor-help"
           >
             🔔 +{task.complaint_boost} boost
           </span>
@@ -35,8 +35,8 @@ export default function TaskExpandView({ task }) {
 
         {/* Assignee */}
         {task.assignee && (
-          <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-medium">
-            <span className="w-5 h-5 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-800 font-bold text-[10px]">
+          <span className="flex items-center gap-1.5 rounded-full bg-[color:var(--surface-container)] px-2.5 py-0.5 text-xs font-medium text-[color:var(--on-surface)]">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[color:var(--secondary-container)] text-[10px] font-bold text-[color:var(--on-secondary-container)]">
               {task.assignee[0]?.toUpperCase()}
             </span>
             {task.assignee}
@@ -49,16 +49,16 @@ export default function TaskExpandView({ task }) {
 
       {/* Description */}
       {task.description && (
-        <p className="text-sm text-gray-600 leading-relaxed">{task.description}</p>
+        <p className="text-sm leading-relaxed text-[color:var(--on-surface-variant)]">{task.description}</p>
       )}
 
       {/* AI Reasoning */}
       {task.reasoning && (
-        <div className="rounded-xl bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 p-4">
-          <p className="text-xs font-semibold text-violet-600 mb-1.5 uppercase tracking-wide">
+        <div className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-low)] p-4">
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[color:var(--primary)]">
             🤖 AI Reasoning
           </p>
-          <p className="text-sm text-gray-700 leading-relaxed">{task.reasoning}</p>
+          <p className="text-sm leading-relaxed text-[color:var(--on-surface)]">{task.reasoning}</p>
         </div>
       )}
 
@@ -69,9 +69,9 @@ export default function TaskExpandView({ task }) {
           { label: 'Effort',         value: task.effort         ?? '—' },
           { label: 'Impact',         value: task.impact         ?? '—' },
         ].map(({ label, value }) => (
-          <div key={label} className="rounded-lg bg-gray-50 border border-gray-100 p-3 text-center">
-            <p className="text-lg font-bold text-gray-800">{value}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">{label}</p>
+          <div key={label} className="rounded-lg border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface)] p-3 text-center">
+            <p className="text-lg font-bold text-[color:var(--on-surface)]">{value}</p>
+            <p className="mt-0.5 text-[11px] text-[color:var(--on-surface-variant)]">{label}</p>
           </div>
         ))}
       </div>

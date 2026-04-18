@@ -23,17 +23,17 @@ export default function DeleteConfirmDialog({ task, onClose }) {
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+      <div className="relative z-10 w-full max-w-sm space-y-5 rounded-xl border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] p-6 shadow-2xl">
         {/* Icon */}
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 mx-auto">
           <span className="text-2xl">🗑️</span>
         </div>
 
         <div className="text-center space-y-1">
-          <h2 className="text-lg font-bold text-gray-900">Delete Task?</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-bold text-[color:var(--on-surface)]">Delete Task?</h2>
+          <p className="text-sm text-[color:var(--on-surface-variant)]">
             Are you sure you want to delete{' '}
-            <span className="font-semibold text-gray-700">&ldquo;{task.title}&rdquo;</span>?
+            <span className="font-semibold text-[color:var(--on-surface)]">&ldquo;{task.title}&rdquo;</span>?
             This cannot be undone.
           </p>
         </div>
@@ -43,7 +43,7 @@ export default function DeleteConfirmDialog({ task, onClose }) {
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="flex-1 rounded-lg border border-[color:var(--outline-variant)] px-4 py-2 text-sm font-medium text-[color:var(--on-surface-variant)] transition-colors hover:bg-[color:var(--surface-container-low)]"
           >
             Cancel
           </button>
