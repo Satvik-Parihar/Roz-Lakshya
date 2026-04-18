@@ -73,18 +73,52 @@ async def create_task(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
 
 # ENDPOINT 2: GET /tasks — All tasks sorted by priority_score DESC
 @router.get("/", response_model=List[TaskResponse])
-async def get_tasks(user_id: Optional[int] = None, db: AsyncSession = Depends(get_db)):
-    query = select(Task)
+async def get_tasks(user_id: Optional[int] = None, limit: int = 100, db: AsyncSession = Depends(get_db)):
+    # Use a join to avoid N+1 queries for assignee names
+    # Note: We keep TaskResponse structure by mapping the result
+    from sqlalchemy.orm import joinedload
+    
+    query = select(Task).options(joinedload(Task.assignee))
     if user_id:
         query = query.filter(Task.assignee_id == user_id)
-    query = query.order_by(Task.priority_score.desc())
+    
+    # Apply limit to prevent hanging with 50,000 tasks
+    query = query.order_by(Task.priority_score.desc()).limit(limit)
     
     result = await db.execute(query)
     tasks = result.scalars().all()
-    # Execute enrich tasks concurrently
+    
     if not tasks:
         return []
-    return await asyncio.gather(*(enrich_task(t, db) for t in tasks))
+
+    # Map to schemas manually since we used joinedload
+    output = []
+    for t in tasks:
+        deadline = None
+        if t.created_at and getattr(t, "deadline_days", None):
+            deadline = t.created_at + timedelta(days=t.deadline_days)
+            
+        output.append({
+            "id": t.id,
+            "task_id": t.task_id,
+            "title": t.title,
+            "description": t.description,
+            "assignee_id": t.assignee_id,
+            "assignee_name": t.assignee.name if t.assignee else None,
+            "deadline_days": t.deadline_days,
+            "deadline": deadline,
+            "effort": t.effort,
+            "impact": t.impact,
+            "workload": getattr(t, "workload", 5),
+            "status": t.status,
+            "priority_score": t.priority_score,
+            "priority_label": t.priority_label,
+            "complaint_boost": t.complaint_boost,
+            "ai_reasoning": t.ai_reasoning,
+            "created_at": t.created_at,
+            "updated_at": t.updated_at
+        })
+    return output
 
 
 # ENDPOINT 3: PATCH /tasks/{id} — Update fields + re-trigger AI scoring

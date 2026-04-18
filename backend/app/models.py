@@ -8,6 +8,8 @@ class User(Base):
     name = Column(String(100), nullable=False)
     role = Column(String(20), nullable=False)
     created_at = Column(DateTime, default=func.now())
+    
+    tasks = relationship("Task", back_populates="assignee")
 
 class Task(Base):
     __tablename__ = 'tasks'
@@ -27,6 +29,8 @@ class Task(Base):
     ai_reasoning = Column(Text)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    assignee = relationship("User", back_populates="tasks")
 
 class Complaint(Base):
     __tablename__ = 'complaints'
