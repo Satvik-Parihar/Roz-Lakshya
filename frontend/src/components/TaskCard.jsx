@@ -12,14 +12,14 @@ export default function TaskCard({ task }) {
 
   const score = task.priority_score ?? 0;
   const leftBorderColor =
-    score >= 70 ? 'border-l-red-500'
-    : score >= 40 ? 'border-l-yellow-500'
-    : 'border-l-green-500';
+    score >= 70 ? 'border-l-rose-500'
+    : score >= 40 ? 'border-l-amber-500'
+    : 'border-l-emerald-500';
 
   return (
     <>
       <article
-        className={`bg-white rounded-2xl border border-gray-100 border-l-4 ${leftBorderColor} shadow-sm hover:shadow-md transition-all duration-200 p-5 group`}
+        className={`group rounded-xl border border-[color:var(--outline-variant)]/50 border-l-4 ${leftBorderColor} bg-[color:var(--surface-container-lowest)] p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md`}
       >
         {/* Compact header */}
         <div className="flex items-start justify-between gap-3">
@@ -42,7 +42,7 @@ export default function TaskCard({ task }) {
             {/* Assignee + score compact */}
             <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
               {task.assignee && <span>👤 {task.assignee}</span>}
-              <span>Score: <strong className="text-gray-600">{score}</strong></span>
+              <span>Score: <strong className="text-[color:var(--on-surface)]">{score}</strong></span>
             </div>
           </div>
 
@@ -50,14 +50,14 @@ export default function TaskCard({ task }) {
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
             <button
               onClick={() => setShowEdit(true)}
-              className="p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors"
+              className="rounded-lg p-1.5 text-[color:var(--on-surface-variant)] transition-colors hover:bg-[color:var(--surface-container)] hover:text-[color:var(--primary)]"
               title="Edit task"
             >
               ✏️
             </button>
             <button
               onClick={() => setShowDelete(true)}
-              className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+              className="rounded-lg p-1.5 text-[color:var(--on-surface-variant)] transition-colors hover:bg-rose-100 hover:text-rose-600"
               title="Delete task"
             >
               🗑️
@@ -68,7 +68,7 @@ export default function TaskCard({ task }) {
         {/* Expand toggle */}
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="mt-3 flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
+          className="mt-3 flex items-center gap-1 text-xs font-medium text-[color:var(--primary)] transition-colors hover:text-[color:var(--primary-container)]"
         >
           <span
             className="inline-block transition-transform duration-200"

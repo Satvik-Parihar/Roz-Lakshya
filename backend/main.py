@@ -1,18 +1,31 @@
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-
+from app.database import init_db
 from app.routers import tasks, complaints, dashboard, alerts, users
 from app.services.scheduler import start_scheduler, stop_scheduler
+
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    try:
+        await init_db()
+        app.state.db_ready = True
+    except Exception as exc:
+        # Keep API bootable for non-DB routes (e.g. auth) when DB is temporarily unavailable.
+        app.state.db_ready = False
+        logger.warning("Database init failed at startup: %s", exc)
+
     start_scheduler()
     yield
+
     # Shutdown
     stop_scheduler()
 

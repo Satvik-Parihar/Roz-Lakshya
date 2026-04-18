@@ -14,6 +14,9 @@ import {
 } from 'recharts';
 
 import { dashboardApi } from '../api/taskApi';
+import PriorityFooter from '../components/PriorityFooter';
+import PriorityHeader from '../components/PriorityHeader';
+import useTaskStore from '../store/useTaskStore';
 
 const EMPTY_SUMMARY = {
   total_tasks: 0,
@@ -87,6 +90,7 @@ function getStatusPillClass(status) {
 }
 
 export default function Dashboard() {
+  const tasks = useTaskStore((state) => state.tasks);
   const [summary, setSummary] = useState(null);
   const [workloadMode, setWorkloadMode] = useState('department');
   const [workload, setWorkload] = useState([]);
@@ -141,7 +145,26 @@ export default function Dashboard() {
     fetchAll();
   }, [fetchAll]);
 
-  const safeSummary = summary || EMPTY_SUMMARY;
+  const localSummary = useMemo(() => {
+    const totalTasks = tasks.length;
+    const completed = tasks.filter((task) => task.status === 'done').length;
+    const inProgress = tasks.filter((task) => ['in-progress', 'in_progress'].includes(task.status)).length;
+    const highPriorityActive = tasks.filter(
+      (task) => (task.priority_label || '').toLowerCase() === 'high' && task.status !== 'done',
+    ).length;
+    const onHold = tasks.filter((task) => task.status === 'todo' && Number(task.priority_score || 0) < 20).length;
+
+    return {
+      ...EMPTY_SUMMARY,
+      total_tasks: totalTasks,
+      completed_today: completed,
+      in_progress: inProgress,
+      high_priority_active: highPriorityActive,
+      on_hold: onHold,
+    };
+  }, [tasks]);
+
+  const safeSummary = summary || localSummary;
   const visibleBottlenecks = bottlenecks.slice(0, 20);
 
   const workloadChartData = useMemo(() => {
@@ -189,8 +212,18 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20">
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+    <div className="brand-page-bg min-h-screen">
+      <PriorityHeader appMode />
+
+      <main className="mx-auto w-full max-w-6xl px-6 py-10 space-y-8">
+        <section className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-6 shadow-sm">
+          <p className="font-mono text-xs uppercase tracking-widest text-[color:var(--primary)]">Manager View</p>
+          <h1 className="mt-1 font-headline text-3xl font-bold tracking-tight text-[color:var(--on-surface)]">Dashboard</h1>
+          <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">
+            Monitor workload distribution and priority execution quality across your active queue.
+          </p>
+        </section>
+
         <header className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">📊 Dashboard</h1>
@@ -465,7 +498,23 @@ export default function Dashboard() {
             </div>
           )}
         </section>
-      </div>
+
+        <section className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-6 shadow-sm">
+          <h2 className="font-headline text-xl font-bold text-[color:var(--on-surface)]">Operational Notes</h2>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <article className="rounded-lg border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface)] p-4">
+              <h3 className="font-semibold text-[color:var(--on-surface)]">High-risk window</h3>
+              <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">Next 24h has dense deadlines. Push complaint-linked tasks first.</p>
+            </article>
+            <article className="rounded-lg border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface)] p-4">
+              <h3 className="font-semibold text-[color:var(--on-surface)]">Team throughput</h3>
+              <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">Execution pace is stable. Consider reducing mid-priority context switching.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <PriorityFooter />
     </div>
   );
 }

@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { complaintApi, taskApi } from '../api/taskApi';
+
+import PriorityFooter from '../components/PriorityFooter';
+import PriorityHeader from '../components/PriorityHeader';
+import { complaintApi } from '../api/taskApi';
 
 export default function ComplaintEngine() {
   const [text, setText] = useState('');
@@ -25,16 +28,16 @@ export default function ComplaintEngine() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!text.trim()) return;
-    
+
     setLoading(true);
     setResult(null);
     setMessage('');
-    
+
     try {
       const res = await complaintApi.create({ text, channel });
       setResult(res.data);
       setText('');
-      loadComplaints();
+      await loadComplaints();
       setMessage('Complaint classified and recorded successfully!');
     } catch (err) {
       setMessage('Error submitting complaint.');
@@ -44,11 +47,13 @@ export default function ComplaintEngine() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="brand-page-bg min-h-screen">
+      <PriorityHeader appMode />
+
+      <main className="mx-auto w-full max-w-4xl space-y-8 px-6 py-10">
         <header>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">📢 Complaint Engine</h1>
-          <p className="text-slate-500">Intelligent classification & priority boosting powered by priority engine</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Complaint Engine</h1>
+          <p className="text-slate-500">Intelligent classification and priority boosting</p>
         </header>
 
         <section className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
@@ -56,20 +61,20 @@ export default function ComplaintEngine() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-bold text-slate-400 uppercase">Channel</label>
-              <select 
-                value={channel} 
+              <select
+                value={channel}
                 onChange={(e) => setChannel(e.target.value)}
                 className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
               >
-                <option value="email">📧 Email</option>
-                <option value="call">📞 Call</option>
-                <option value="direct">👤 Direct</option>
+                <option value="email">Email</option>
+                <option value="call">Call</option>
+                <option value="direct">Direct</option>
               </select>
             </div>
 
             <div className="flex flex-col gap-1">
               <label className="text-xs font-bold text-slate-400 uppercase">Input Text</label>
-              <textarea 
+              <textarea
                 rows={4}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -78,8 +83,8 @@ export default function ComplaintEngine() {
               />
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
             >
@@ -110,7 +115,7 @@ export default function ComplaintEngine() {
                   <ul className="space-y-2">
                     {result.resolution_steps?.map((step, i) => (
                       <li key={i} className="flex gap-2 text-sm">
-                        <span className="bg-white/20 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0">{i+1}</span>
+                        <span className="bg-white/20 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0">{i + 1}</span>
                         {step}
                       </li>
                     ))}
@@ -125,7 +130,7 @@ export default function ComplaintEngine() {
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span>Urgency Score</span>
-                  <span className="font-bold underline">{result.urgency_score.toFixed(1)}/100</span>
+                  <span className="font-bold underline">{Number(result.urgency_score || 0).toFixed(1)}/100</span>
                 </div>
                 {result.linked_task_id && (
                   <div className="pt-2 border-t border-white/20">
@@ -161,7 +166,9 @@ export default function ComplaintEngine() {
             ))}
           </div>
         </section>
-      </div>
+      </main>
+
+      <PriorityFooter />
     </div>
   );
 }
