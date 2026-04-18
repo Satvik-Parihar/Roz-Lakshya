@@ -187,3 +187,63 @@ async def get_task_score(task_id: int, db: AsyncSession = Depends(get_db)):
         "recomputed_score": score,
         "reasoning": reasoning
     }
+
+
+class TaskSequenceResponse(TaskResponse):
+    sequence: int
+    reason: str
+
+
+@router.get("/sequence/{user_id}", response_model=List[TaskSequenceResponse])
+async def get_execution_sequence(user_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Task).filter(
+            Task.assignee_id == user_id,
+            Task.status != "done",
+        )
+    )
+    tasks = result.scalars().all()
+    if not tasks:
+        return []
+
+    task_dicts = []
+    for task in tasks:
+        deadline = None
+        if task.created_at and getattr(task, "deadline_days", None):
+            deadline = (task.created_at + timedelta(days=task.deadline_days)).isoformat()
+
+        task_dicts.append(
+            {
+                "id": task.id,
+                "title": task.title,
+                "priority_score": task.priority_score,
+                "deadline": deadline,
+                "effort": task.effort,
+                "impact": task.impact,
+                "status": task.status,
+            }
+        )
+
+    from app.services.ai_engine import suggest_execution_order
+
+    ordered = await suggest_execution_order(task_dicts)
+    if not ordered:
+        return []
+
+    sequence_output = []
+    for item in ordered:
+        task_id = item.get("id")
+        if task_id is None:
+            continue
+
+        task_result = await db.execute(select(Task).filter(Task.id == task_id))
+        task = task_result.scalars().first()
+        if not task:
+            continue
+
+        enriched_task = await enrich_task(task, db)
+        enriched_task["sequence"] = int(item.get("sequence", len(sequence_output) + 1))
+        enriched_task["reason"] = str(item.get("reason", ""))
+        sequence_output.append(enriched_task)
+
+    return sequence_output

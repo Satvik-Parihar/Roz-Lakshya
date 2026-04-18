@@ -130,7 +130,7 @@ export default function TaskBoard() {
               📋 Task Board
             </h1>
             <p className="text-xs text-gray-400 mt-0.5">
-              {tasks.length} task{tasks.length !== 1 ? 's' : ''} · sorted by AI priority
+              {tasks.length} task{tasks.length !== 1 ? 's' : ''} · Sorted by Work Priority
             </p>
           </div>
           <button
