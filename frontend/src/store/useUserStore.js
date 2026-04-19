@@ -2,8 +2,8 @@ import { create } from 'zustand';
 
 const MOCK_USERS = [
   { id: 1, name: 'Alice', role: 'team_member' },
-  { id: 2, name: 'Bob', role: 'manager' },
-  { id: 3, name: 'Charlie', role: 'teacher' }
+  { id: 2, name: 'Bob', role: 'admin' },
+  { id: 3, name: 'Charlie', role: 'team_member' }
 ];
 
 const useUserStore = create((set) => ({
