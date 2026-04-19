@@ -4,6 +4,7 @@ import { usersApi } from '../api/taskApi';
 import TaskCard from '../components/TaskCard';
 import PriorityHeader from '../components/PriorityHeader';
 import PriorityFooter from '../components/PriorityFooter';
+import PriorityBadge from '../components/PriorityBadge';
 import { getAuthSnapshot } from '../utils/auth';
 
 // ─── Skeleton loader ───────────────────────────────────────────────────────────
@@ -18,7 +19,7 @@ function TaskSkeleton() {
 }
 
 // ─── Create Task Modal ─────────────────────────────────────────────────────────
-function CreateTaskModal({ onClose }) {
+function CreateTaskModal({ onClose, onTaskCreated }) {
   const { createTask } = useTaskStore();
   const [form, setForm] = useState({
     title: '',
@@ -128,13 +129,13 @@ function CreateTaskModal({ onClose }) {
         workload: form.workload !== '' ? Number(form.workload) : undefined,
         deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
       };
-      await createTask(payload);
-      onClose();
+      const createdTask = await createTask(payload);
+      if (onTaskCreated) onTaskCreated(createdTask);
+      else onClose();
     } catch {
       setError('Failed to create task. Please try again.');
     } finally {
       setBusy(false);
-
     }
   };
 
@@ -270,6 +271,7 @@ export default function TaskBoard() {
   const auth = useMemo(() => getAuthSnapshot(), []);
   const isAdmin = Boolean(auth.isAdmin);
   const [showCreate, setShowCreate] = useState(false);
+  const [newlyCreatedTask, setNewlyCreatedTask] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -281,7 +283,13 @@ export default function TaskBoard() {
 
   const filtered = tasks.filter((t) => {
     const matchesStatus = statusFilter === 'all' || normalizeStatus(t.status) === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || String(t.priority_label || '').toLowerCase() === priorityFilter;
+    
+    let computedPriority = 'low';
+    const score = t.priority_score || 0;
+    if (score >= 70) computedPriority = 'high';
+    else if (score >= 40) computedPriority = 'medium';
+    const matchesPriority = priorityFilter === 'all' || computedPriority === priorityFilter;
+    
     const q = search.toLowerCase();
     const matchesSearch =
       !q ||
@@ -290,10 +298,9 @@ export default function TaskBoard() {
       t.description?.toLowerCase().includes(q);
     return matchesStatus && matchesPriority && matchesSearch;
   }).sort((a, b) => {
-    const ranks = { 'High': 3, 'Medium': 2, 'Low': 1 };
-    const rankA = ranks[a.priority_label] || 0;
-    const rankB = ranks[b.priority_label] || 0;
-    return sortOrder === 'desc' ? rankB - rankA : rankA - rankB;
+    const scoreA = a.priority_score || 0;
+    const scoreB = b.priority_score || 0;
+    return sortOrder === 'desc' ? scoreB - scoreA : scoreA - scoreB;
   });
 
   return (
@@ -429,7 +436,40 @@ export default function TaskBoard() {
         )}
       </main>
 
-      {showCreate && isAdmin && <CreateTaskModal onClose={() => setShowCreate(false)} />}
+      {showCreate && isAdmin && (
+        <CreateTaskModal 
+          onClose={() => setShowCreate(false)} 
+          onTaskCreated={(t) => {
+            setShowCreate(false);
+            setNewlyCreatedTask(t);
+          }}
+        />
+      )}
+
+      {newlyCreatedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setNewlyCreatedTask(null)} />
+          <div className="relative z-10 flex w-full max-w-sm flex-col items-center rounded-xl border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] p-6 text-center shadow-2xl">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+              <span className="material-symbols-outlined text-3xl text-emerald-600">check_circle</span>
+            </div>
+            <h3 className="mb-2 text-xl font-bold text-[color:var(--on-surface)] text-balance">Task Added Successfully</h3>
+            <p className="mb-1 text-sm font-medium text-[color:var(--on-surface)] truncate w-full px-2">
+              {newlyCreatedTask.title}
+            </p>
+            <div className="mb-6 flex flex-wrap items-center justify-center gap-2 text-sm text-[color:var(--on-surface-variant)]">
+               <span>Score: <strong>{(newlyCreatedTask.priority_score || 0).toFixed(2)}</strong></span>
+               <PriorityBadge score={newlyCreatedTask.priority_score} />
+            </div>
+            <button 
+              onClick={() => setNewlyCreatedTask(null)}
+              className="w-full rounded-lg bg-[color:var(--on-surface)] px-4 py-2.5 text-sm font-semibold text-[color:var(--surface-container-lowest)] transition-colors hover:bg-[color:var(--inverse-surface)]"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
 
       <PriorityFooter />
     </div>
