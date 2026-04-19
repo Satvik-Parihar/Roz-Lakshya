@@ -79,17 +79,6 @@ def _create_user_login_response(user: User) -> LoginResponse:
 
 @router.post("/signup", response_model=SignupResponse, status_code=status.HTTP_201_CREATED)
 async def signup_admin_company(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
-    has_existing_admin = (
-        await db.scalar(
-            select(User.id).where((User.is_admin.is_(True)) | (User.role == "admin")).limit(1)
-        )
-    ) is not None
-    if has_existing_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin company is already registered. Employees must be added by admin.",
-        )
-
     normalized_email = payload.admin_email.strip().lower()
     existing_user = await db.execute(select(User).where(User.email == normalized_email))
     if existing_user.scalars().first() is not None:

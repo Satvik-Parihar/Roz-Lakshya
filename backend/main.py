@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 import logging
 
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     try:
-        await init_db()
+        await asyncio.wait_for(init_db(), timeout=max(1, int(settings.DB_INIT_TIMEOUT_SECONDS)))
         """
         # Safe column migration for TS-13 admin priority override fields.
         async with engine.begin() as conn:
@@ -90,6 +91,12 @@ async def lifespan(app: FastAPI):
                     logger.warning("Index creation failed: %s | %s", idx_stmt, exc)
         """
         app.state.db_ready = True
+    except asyncio.TimeoutError:
+        app.state.db_ready = False
+        logger.warning(
+            "Database init timed out after %ss. Continuing startup with DB readiness=false.",
+            settings.DB_INIT_TIMEOUT_SECONDS,
+        )
     except Exception as exc:
         # Keep API bootable for non-DB routes (e.g. auth) when DB is temporarily unavailable.
         app.state.db_ready = False

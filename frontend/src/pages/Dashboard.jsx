@@ -37,14 +37,14 @@ const EMPTY_NOTES = {
 };
 
 const kpiConfig = [
-  { icon: '📋', label: 'Total Tasks', key: 'total_tasks' },
-  { icon: '✅', label: 'Completed Today', key: 'completed_today' },
-  { icon: '🔄', label: 'In Progress', key: 'in_progress' },
-  { icon: '⚠️', label: 'Overdue', key: 'overdue' },
-  { icon: '🔥', label: 'High Priority', key: 'high_priority_active' },
-  { icon: '📢', label: 'Open Complaints', key: 'open_complaints' },
-  { icon: '👥', label: 'Total Employees', key: 'total_employees' },
-  { icon: '⏸️', label: 'On Hold', key: 'on_hold' },
+  { label: 'Total Tasks', key: 'total_tasks' },
+  { label: 'Completed Today', key: 'completed_today' },
+  { label: 'In Progress', key: 'in_progress' },
+  { label: 'Overdue', key: 'overdue' },
+  { label: 'High Priority', key: 'high_priority_active' },
+  { label: 'Open Complaints', key: 'open_complaints' },
+  { label: 'Total Employees', key: 'total_employees' },
+  { label: 'On Hold', key: 'on_hold' },
 ];
 
 const PIE_COLORS = {
@@ -340,7 +340,6 @@ export default function Dashboard() {
 
       <main className="mx-auto w-full max-w-6xl flex-1 space-y-8 px-3 py-6 sm:px-6 sm:py-10">
         <section className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-4 shadow-sm sm:p-6">
-          <p className="font-mono text-xs uppercase tracking-widest text-[color:var(--primary)]">Manager View</p>
           <h1 className="mt-1 font-headline text-2xl font-bold tracking-tight text-[color:var(--on-surface)] sm:text-3xl">Dashboard</h1>
           <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">
             Monitor workload distribution and priority execution quality across your active queue.
@@ -432,7 +431,7 @@ export default function Dashboard() {
             disabled={loading}
             className="w-full rounded-xl border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-4 py-2 text-sm font-semibold text-[color:var(--on-surface)] shadow-sm hover:bg-[color:var(--surface-container-low)] disabled:opacity-60 sm:w-auto"
           >
-            🔄 Refresh
+            Refresh
           </button>
         </header>
 
@@ -443,7 +442,7 @@ export default function Dashboard() {
         )}
 
         <section className="space-y-3">
-          <h2 className="text-xl font-bold text-slate-800">📈 KPI Snapshot</h2>
+          <h2 className="text-xl font-bold text-slate-800">KPI Snapshot</h2>
           {loading ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, index) => (
@@ -458,7 +457,6 @@ export default function Dashboard() {
               {kpiConfig.map((card) => (
                 <article key={card.key} className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    <span className="mr-1">{card.icon}</span>
                     {card.label}
                   </p>
                   <p
@@ -484,14 +482,14 @@ export default function Dashboard() {
               disabled={triggeringAlerts}
               className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-60"
             >
-              {triggeringAlerts ? 'Triggering...' : '🔔 Force Alert Check (Demo)'}
+              {triggeringAlerts ? 'Triggering...' : 'Force Alert Check (Demo)'}
             </button>
           </div>
         </section>
 
         <section className="rounded-2xl border border-slate-100 bg-white shadow-sm p-5 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-bold text-slate-800">🏢 Department Workload</h2>
+            <h2 className="text-xl font-bold text-slate-800">Department Workload</h2>
             {isAdmin && (
               <div className="inline-flex rounded-xl border border-slate-200 p-1 bg-slate-50">
                 <button
@@ -542,7 +540,7 @@ export default function Dashboard() {
 
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <article className="rounded-2xl border border-slate-100 bg-white shadow-sm p-5 space-y-4">
-            <h2 className="text-xl font-bold text-slate-800">🚨 Overdue Tasks by Department</h2>
+            <h2 className="text-xl font-bold text-slate-800">Overdue Tasks by Department</h2>
             {loading ? (
               <div className="h-[320px] rounded-xl bg-slate-100 animate-pulse" />
             ) : overdueChartData.length === 0 ? (
@@ -565,7 +563,7 @@ export default function Dashboard() {
           </article>
 
           <article className="rounded-2xl border border-slate-100 bg-white shadow-sm p-5 space-y-4">
-            <h2 className="text-xl font-bold text-slate-800">🎯 Priority Distribution</h2>
+            <h2 className="text-xl font-bold text-slate-800">Priority Distribution</h2>
             {loading ? (
               <div className="h-[280px] rounded-xl bg-slate-100 animate-pulse" />
             ) : pieTotal === 0 ? (
@@ -600,7 +598,7 @@ export default function Dashboard() {
 
         <section className="rounded-2xl border border-slate-100 bg-white shadow-sm p-5 space-y-4">
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-slate-800">🚨 Stalled Tasks</h2>
+            <h2 className="text-xl font-bold text-slate-800">Stalled Tasks</h2>
             {!loading && bottlenecks.length > 0 && (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
                 {bottlenecks.length}
@@ -616,7 +614,7 @@ export default function Dashboard() {
             </div>
           ) : visibleBottlenecks.length === 0 ? (
             <div className="rounded-xl bg-green-50 border border-green-100 text-green-700 font-semibold px-4 py-3">
-              ✅ No stalled tasks — great work!
+              No stalled tasks. Great work!
             </div>
           ) : (
             <div className="space-y-3">
@@ -627,7 +625,7 @@ export default function Dashboard() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-slate-800 truncate">{truncateTitle(task.title || `Task #${task.task_id}`)}</p>
-                        <p className="text-xs text-slate-400">Task #{task.task_id} · {task.assignee_name || 'Unassigned'}</p>
+                        <p className="text-xs text-slate-400">Task #{task.task_id} - {task.assignee_name || 'Unassigned'}</p>
                       </div>
                       <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold border ${getPriorityBadgeClass(task.priority_label)}`}>
                         {task.priority_label || 'Low'}
@@ -636,9 +634,9 @@ export default function Dashboard() {
                     <div className="flex items-center gap-3 flex-wrap text-xs">
                       <span className={`px-2 py-0.5 rounded-full font-semibold ${getStatusPillClass(task.status)}`}>{formatStatus(task.status)}</span>
                       <span className={`font-semibold ${Number(task.hours_stalled || 0) > 48 ? 'text-red-600' : 'text-amber-600'}`}>
-                        ⏱ {Number(task.hours_stalled || 0).toFixed(1)}h stalled
+                        {Number(task.hours_stalled || 0).toFixed(1)}h stalled
                       </span>
-                      <span className="text-slate-500">📅 {Number(task.deadline_days || 0)}d deadline</span>
+                      <span className="text-slate-500">{Number(task.deadline_days || 0)}d deadline</span>
                     </div>
                   </div>
                 ))}
@@ -690,7 +688,7 @@ export default function Dashboard() {
         </section>
 
         <section className="rounded-2xl border border-slate-100 bg-white shadow-sm p-5 space-y-4">
-          <h2 className="text-xl font-bold text-slate-800">📊 Department Overview</h2>
+          <h2 className="text-xl font-bold text-slate-800">Department Overview</h2>
           {loading ? (
             <div className="space-y-3">
               {Array.from({ length: 4 }).map((_, index) => (
@@ -709,13 +707,13 @@ export default function Dashboard() {
                   <div key={row.department} className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2">
                     <p className="text-sm font-bold text-slate-800">{row.department}</p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
-                      <span>👥 {Number(row.employee_count || 0)} employees</span>
-                      <span>📋 {Number(row.total_tasks_assigned || 0)} total tasks</span>
-                      <span>📂 {Number(row.open_tasks || 0)} open</span>
+                      <span>{Number(row.employee_count || 0)} employees</span>
+                      <span>{Number(row.total_tasks_assigned || 0)} total tasks</span>
+                      <span>{Number(row.open_tasks || 0)} open</span>
                       <span className={Number(row.overdue_tasks || 0) > 5 ? 'font-bold text-red-600' : ''}>
-                        ⚠️ {Number(row.overdue_tasks || 0)} overdue
+                        {Number(row.overdue_tasks || 0)} overdue
                       </span>
-                      <span>📢 {Number(row.complaints_handled || 0)} complaints</span>
+                      <span>{Number(row.complaints_handled || 0)} complaints</span>
                     </div>
                   </div>
                 ))}
