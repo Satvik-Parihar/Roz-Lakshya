@@ -30,14 +30,14 @@ const EMPTY_SUMMARY = {
 };
 
 const kpiConfig = [
-  { icon: '📋', label: 'Total Tasks', key: 'total_tasks' },
-  { icon: '✅', label: 'Completed Today', key: 'completed_today' },
-  { icon: '🔄', label: 'In Progress', key: 'in_progress' },
-  { icon: '⚠️', label: 'Overdue', key: 'overdue' },
-  { icon: '🔥', label: 'High Priority', key: 'high_priority_active' },
-  { icon: '📢', label: 'Open Complaints', key: 'open_complaints' },
-  { icon: '👥', label: 'Total Employees', key: 'total_employees' },
-  { icon: '⏸️', label: 'On Hold', key: 'on_hold' },
+  { icon: 'list_alt', label: 'Total Tasks', key: 'total_tasks' },
+  { icon: 'check_circle', label: 'Completed Today', key: 'completed_today' },
+  { icon: 'cached', label: 'In Progress', key: 'in_progress' },
+  { icon: 'warning', label: 'Overdue', key: 'overdue' },
+  { icon: 'local_fire_department', label: 'High Priority', key: 'high_priority_active' },
+  { icon: 'campaign', label: 'Open Complaints', key: 'open_complaints' },
+  { icon: 'group', label: 'Total Employees', key: 'total_employees' },
+  { icon: 'pause_circle', label: 'On Hold', key: 'on_hold' },
 ];
 
 const PIE_COLORS = {
@@ -216,26 +216,21 @@ export default function Dashboard() {
       <PriorityHeader appMode />
 
       <main className="mx-auto w-full max-w-6xl px-6 py-10 space-y-8">
-        <section className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-6 shadow-sm">
-          <p className="font-mono text-xs uppercase tracking-widest text-[color:var(--primary)]">Manager View</p>
-          <h1 className="mt-1 font-headline text-3xl font-bold tracking-tight text-[color:var(--on-surface)]">Dashboard</h1>
-          <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">
-            Monitor workload distribution and priority execution quality across your active queue.
-          </p>
-        </section>
-
-        <header className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">📊 Dashboard</h1>
-            <p className="text-sm text-slate-500 mt-1">Live team performance overview</p>
+        <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-6 shadow-sm flex-1">
+            <p className="font-mono text-xs uppercase tracking-widest text-[color:var(--primary)]">Manager View</p>
+            <h1 className="mt-1 font-headline text-3xl font-bold tracking-tight text-[color:var(--on-surface)]">Dashboard</h1>
+            <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">
+              Monitor workload distribution and priority execution quality across your active queue.
+            </p>
           </div>
           <button
             type="button"
             onClick={fetchAll}
             disabled={loading}
-            className="px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 text-sm font-semibold text-slate-700 disabled:opacity-60"
+            className="px-4 py-2 bg-[color:var(--surface-container-lowest)] border border-[color:var(--outline-variant)] rounded-xl shadow-sm hover:bg-[color:var(--surface-container)] transition-colors text-sm font-semibold text-[color:var(--on-surface-variant)] disabled:opacity-60 flex items-center gap-2"
           >
-            🔄 Refresh
+            <span className="material-symbols-outlined text-[18px]">sync</span> Refresh
           </button>
         </header>
 
@@ -246,31 +241,31 @@ export default function Dashboard() {
         )}
 
         <section className="space-y-3">
-          <h2 className="text-xl font-bold text-slate-800">📈 KPI Snapshot</h2>
+          <h2 className="font-headline text-xl font-bold text-[color:var(--on-surface)]">KPI Snapshot</h2>
           {loading ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, index) => (
-                <div key={index} className="rounded-2xl border border-slate-100 bg-white shadow-sm p-6 animate-pulse space-y-3">
-                  <div className="h-4 w-20 rounded bg-slate-200" />
-                  <div className="h-8 w-16 rounded bg-slate-200" />
+                <div key={index} className="rounded-2xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] shadow-sm p-6 animate-pulse space-y-3">
+                  <div className="h-4 w-20 rounded bg-[color:var(--surface-container-highest)]" />
+                  <div className="h-8 w-16 rounded bg-[color:var(--surface-container-highest)]" />
                 </div>
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {kpiConfig.map((card) => (
-                <article key={card.key} className="rounded-2xl border border-slate-100 bg-white shadow-sm p-6 space-y-2">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    <span className="mr-1">{card.icon}</span>
+                <article key={card.key} className="rounded-2xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] shadow-sm p-6 space-y-2 hover:shadow-md transition-shadow">
+                  <p className="text-xs font-bold text-[color:var(--on-surface-variant)] uppercase tracking-wide flex items-center gap-1 font-mono">
+                    <span className="material-symbols-outlined text-[16px]">{card.icon}</span>
                     {card.label}
                   </p>
                   <p
-                    className={`text-3xl font-black ${
+                    className={`font-headline text-3xl font-black ${
                       card.key === 'overdue' && safeSummary.overdue > 0
                         ? 'text-red-600'
                         : card.key === 'high_priority_active' && safeSummary.high_priority_active > 0
                           ? 'text-orange-600'
-                          : 'text-gray-900'
+                          : 'text-[color:var(--on-surface)]'
                     }`}
                   >
                     {safeSummary[card.key] ?? 0}

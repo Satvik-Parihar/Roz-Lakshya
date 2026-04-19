@@ -18,10 +18,10 @@ export default function Navbar() {
   };
   
   const navItems = [
-    { path: '/tasks', label: 'Tasks', icon: '📋' },
-    { path: '/plan', label: "Today's Plan", icon: '🚀' },
-    { path: '/complaints', label: 'Complaints', icon: '📢' },
-    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { path: '/tasks', label: 'Tasks', icon: 'list_alt' },
+    { path: '/plan', label: "Today's Plan", icon: 'rocket_launch' },
+    { path: '/complaints', label: 'Complaints', icon: 'campaign' },
+    { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   ];
 
   const fetchAlerts = async () => {
@@ -46,15 +46,18 @@ export default function Navbar() {
     return `${Math.floor(h / 24)}d ago`;
   };
 
-  const getUserEmail = () => {
+  const getJwtPayload = () => {
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) return 'Guest';
+      if (!token) return { name: 'Guest', role: 'Viewer' };
       const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
       const payload = JSON.parse(atob(base64));
-      return payload.sub || 'User';
+      return {
+        name: payload.name || payload.sub || 'User',
+        role: payload.role ? payload.role.replace('_', ' ') : 'Member'
+      };
     } catch {
-      return 'User';
+      return { name: 'User', role: 'Member' };
     }
   };
 
@@ -102,31 +105,33 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-100 z-50 md:sticky md:top-0 md:border-b md:border-t-0 py-2">
+    <nav className="fixed bottom-0 left-0 right-0 bg-[color:var(--surface)]/80 backdrop-blur-md border-t border-[color:var(--outline-variant)]/50 z-50 md:sticky md:top-0 md:border-b md:border-t-0 py-2">
       <div className="max-w-4xl mx-auto flex items-center justify-around md:justify-start md:gap-8 px-6">
-        <div className="hidden md:block font-black text-indigo-600 text-xl tracking-tighter mr-4">RL</div>
+        <div className="hidden md:block mr-4">
+          <img src="/logo.png" alt="Roz-Lakshya Logo" className="h-12 w-auto" />
+        </div>
         {navItems.map((item) => (
           <Link 
             key={item.path} 
             to={item.path}
             className={`flex flex-col md:flex-row items-center gap-1 md:gap-2 py-2 px-3 rounded-xl transition-all duration-200
               ${location.pathname === item.path 
-                ? 'text-indigo-600 font-bold scale-105' 
-                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                ? 'text-[color:var(--primary)] bg-[color:var(--surface-container-highest)] font-bold scale-105' 
+                : 'text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)] hover:bg-[color:var(--surface-container)]'}`}
           >
-            <span className="text-xl md:text-base">{item.icon}</span>
-            <span className="text-[10px] md:text-sm uppercase tracking-wider md:capitalize md:tracking-normal">{item.label}</span>
+            <span className="material-symbols-outlined text-xl md:text-base">{item.icon}</span>
+            <span className="text-[10px] font-headline md:text-sm uppercase tracking-wider md:capitalize md:tracking-normal">{item.label}</span>
           </Link>
         ))}
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
             onClick={() => setDropdownOpen((o) => !o)}
-            className="relative hidden md:flex p-2 rounded-xl hover:bg-slate-100 transition-colors"
+            className="relative hidden md:flex p-2 rounded-xl text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container-highest)] hover:text-[color:var(--on-surface)] transition-colors"
           >
-            <span>🔔</span>
+            <span className="material-symbols-outlined">notifications</span>
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1">
+              <span className="absolute top-1 right-2 min-w-[18px] h-[18px] bg-red-500 text-[color:var(--on-primary)] text-[10px] font-black rounded-full flex items-center justify-center px-1">
                 {unreadCount >= 10 ? '9+' : unreadCount}
               </span>
             )}
@@ -136,11 +141,11 @@ export default function Navbar() {
             type="button"
             onClick={() => setDropdownOpen((o) => !o)}
             className={`relative md:hidden flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-all duration-200 ${
-              dropdownOpen ? 'text-indigo-600 font-bold scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+              dropdownOpen ? 'text-[color:var(--primary)] font-bold scale-105' : 'text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)] hover:bg-[color:var(--surface-container)]'
             }`}
           >
-            <span className="text-xl">🔔</span>
-            <span className="text-[10px] uppercase tracking-wider">Alerts</span>
+            <span className="material-symbols-outlined text-xl">notifications</span>
+            <span className="text-[10px] uppercase tracking-wider font-headline">Alerts</span>
             {unreadCount > 0 && (
               <span className="absolute top-1.5 right-2.5 w-2 h-2 bg-red-500 rounded-full" />
             )}
@@ -205,20 +210,18 @@ export default function Navbar() {
         </div>
 
         {/* Role Switcher placeholder */}
-        <div className="hidden md:flex items-center ml-auto gap-2">
+        <div className="hidden md:flex items-center ml-auto gap-4">
+          <div className="text-right">
+             <div className="text-[10px] font-mono text-[color:var(--on-surface-variant)] uppercase tracking-widest">{getJwtPayload().role}</div>
+             <div className="text-sm font-headline font-bold text-[color:var(--on-surface)]">Hi, {getJwtPayload().name}</div>
+          </div>
           <button
             type="button"
             onClick={handleLogout}
-            className="text-xs font-semibold text-slate-400 hover:text-red-500 transition-colors ml-2"
+            className="flex items-center justify-center h-8 w-8 rounded-full border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)] hover:bg-[color:var(--surface-variant)] transition-colors"
+            title="Logout"
           >
-            Logout
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-2 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full"
-          >
-             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Role:</span>
-             <span className="text-xs font-bold text-indigo-500">{getUserEmail()}</span>
+            <span className="material-symbols-outlined text-[18px]">logout</span>
           </button>
         </div>
       </div>

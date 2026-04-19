@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, RefreshCw } from 'lucide-react';
 import { getTasks, createTask, updateTask, deleteTask } from '../api/tasks';
 import useUserStore from '../store/useUserStore';
 import TaskCard from '../components/TaskCard';
@@ -99,48 +98,48 @@ export default function TaskBoard() {
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 mt-4">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-gray-900">Task Board</h1>
-          <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
-            {tasks.length} tasks
+          <h1 className="font-headline text-3xl font-bold text-[color:var(--on-surface)] tracking-tight">Task Board</h1>
+          <span className="bg-[color:var(--surface-container)] text-[color:var(--on-surface-variant)] px-3 py-1 rounded-full text-sm font-bold font-mono uppercase tracking-widest border border-[color:var(--outline-variant)]/50">
+             {tasks.length} tasks
           </span>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <button 
             onClick={loadTasks} 
-            className="flex items-center justify-center p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 bg-white"
+            className="flex items-center justify-center p-2 text-[color:var(--on-surface-variant)] hover:bg-[color:var(--surface-container)] rounded-xl transition-colors border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)]"
             title="Refresh tasks"
           >
-            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+            <span className={`material-symbols-outlined ${loading ? 'animate-spin' : ''}`}>sync</span>
           </button>
           <button 
             onClick={() => setShowCreateModal(true)}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[color:var(--on-surface)] text-[color:var(--surface-container-lowest)] px-4 py-2 rounded-xl font-semibold hover:bg-[color:var(--inverse-surface)] transition-colors shadow-sm"
           >
-            <Plus size={18} />
+            <span className="material-symbols-outlined text-[18px]">add</span>
             Add Task
           </button>
         </div>
       </div>
 
       {creatingTask && (
-        <div className="mb-6 p-4 bg-indigo-50 border border-indigo-100 rounded-lg text-indigo-700 flex items-center justify-center gap-2 font-medium animate-pulse">
-          <RefreshCw size={18} className="animate-spin" />
+        <div className="mb-6 p-4 bg-[color:var(--primary-container)] border border-[color:var(--primary)] rounded-lg text-[color:var(--on-primary-container)] flex items-center justify-center gap-2 font-medium animate-pulse">
+           <span className="material-symbols-outlined animate-spin">sync</span>
           ⏳ AI scoring task priority...
         </div>
       )}
 
       {/* Filters */}
-      <div className="flex items-center gap-2 mb-6 border-b border-gray-200 pb-1 overflow-x-auto scrollbar-hide">
+      <div className="flex items-center gap-2 mb-6 border-b border-[color:var(--outline-variant)]/50 pb-1 overflow-x-auto scrollbar-hide">
         {['all', 'todo', 'in_progress', 'done'].map((status) => (
           <button
             key={status}
             onClick={() => setFilterStatus(status)}
-            className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
+            className={`px-4 py-2 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors border-b-2 ${
               filterStatus === status 
-                ? 'border-indigo-600 text-indigo-600' 
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-[color:var(--primary)] text-[color:var(--primary)]' 
+                : 'border-transparent text-[color:var(--on-surface-variant)] hover:text-[color:var(--on-surface)]'
             }`}
           >
             {status === 'all' ? 'All' : status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}

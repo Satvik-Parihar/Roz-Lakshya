@@ -35,13 +35,16 @@ def _b64url_encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("utf-8")
 
 
-def _create_jwt_token(subject: str, expires_delta: timedelta) -> str:
+def _create_jwt_token(subject: str, user_id: int, name: str, role: str, expires_delta: timedelta) -> str:
     if settings.JWT_ALGORITHM != "HS256":
         raise HTTPException(status_code=500, detail="Unsupported JWT algorithm")
 
     now = datetime.now(timezone.utc)
     payload = {
         "sub": subject,
+        "user_id": user_id,
+        "name": name,
+        "role": role,
         "iat": int(now.timestamp()),
         "exp": int((now + expires_delta).timestamp()),
     }
@@ -118,6 +121,9 @@ async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
 
     token = _create_jwt_token(
         subject=normalized_email,
+        user_id=user.id,
+        name=user.name,
+        role=user.role,
         expires_delta=timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     return SignupResponse(
@@ -139,6 +145,9 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     if user and user.password_hash and _verify_password(payload.password, user.password_hash):
         token = _create_jwt_token(
             subject=normalized_email,
+            user_id=user.id,
+            name=user.name,
+            role=user.role,
             expires_delta=timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
         )
         return LoginResponse(access_token=token)
@@ -152,6 +161,9 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
 
     token = _create_jwt_token(
         subject=normalized_email,
+        user_id=1,
+        name="Admin User",
+        role="manager",
         expires_delta=timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     return LoginResponse(access_token=token)

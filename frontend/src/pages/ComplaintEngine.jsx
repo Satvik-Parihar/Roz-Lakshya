@@ -25,6 +25,16 @@ export default function ComplaintEngine() {
     }
   };
 
+  const handleToggleStatus = async (id, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'open' ? 'resolved' : 'open';
+      await complaintApi.updateStatus(id, newStatus);
+      await loadComplaints();
+    } catch (err) {
+      console.error('Failed to update status', err);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!text.trim()) return;
@@ -52,19 +62,19 @@ export default function ComplaintEngine() {
 
       <main className="mx-auto w-full max-w-4xl space-y-8 px-6 py-10">
         <header>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Complaint Engine</h1>
-          <p className="text-slate-500">Intelligent classification and priority boosting</p>
+          <h1 className="font-headline text-3xl font-bold text-[color:var(--on-surface)] tracking-tight">Complaint Engine</h1>
+          <p className="text-[color:var(--on-surface-variant)] text-sm">Intelligent classification and priority boosting</p>
         </header>
 
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <h2 className="text-lg font-semibold mb-4">Register New Complaint</h2>
+        <section className="bg-[color:var(--surface-container-lowest)] rounded-2xl shadow-sm border border-[color:var(--outline-variant)]/50 p-6">
+          <h2 className="font-headline text-lg font-bold text-[color:var(--on-surface)] mb-4">Register New Complaint</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-400 uppercase">Channel</label>
+              <label className="text-xs font-bold text-[color:var(--on-surface-variant)] uppercase tracking-widest font-mono">Channel</label>
               <select
                 value={channel}
                 onChange={(e) => setChannel(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="bg-[color:var(--surface-container)] border transform transition-all border-[color:var(--outline-variant)]/50 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[color:var(--primary)] outline-none text-[color:var(--on-surface)]"
               >
                 <option value="email">Email</option>
                 <option value="call">Call</option>
@@ -73,20 +83,20 @@ export default function ComplaintEngine() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-400 uppercase">Input Text</label>
+              <label className="text-xs font-bold text-[color:var(--on-surface-variant)] uppercase tracking-widest font-mono">Input Text</label>
               <textarea
                 rows={4}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Describe the issue in detail..."
-                className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                className="bg-[color:var(--surface-container)] border transform transition-all border-[color:var(--outline-variant)]/50 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-[color:var(--primary)] outline-none resize-none text-[color:var(--on-surface)]"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              className="w-full bg-[color:var(--on-surface)] text-[color:var(--surface-container-lowest)] font-semibold py-3 rounded-xl hover:bg-[color:var(--inverse-surface)] transition-colors disabled:opacity-50"
             >
               {loading ? 'AI Classifying...' : 'Submit Complaint'}
             </button>
@@ -145,23 +155,32 @@ export default function ComplaintEngine() {
         )}
 
         <section className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-800">Recent Complaints</h2>
+          <h2 className="font-headline text-xl font-bold text-[color:var(--on-surface)]">Recent Complaints</h2>
           <div className="grid grid-cols-1 gap-4">
             {complaints.map((c) => (
-              <div key={c.id} className="bg-white p-4 rounded-xl border border-slate-100 flex items-center justify-between group">
+              <div key={c.id} className={`bg-[color:var(--surface-container-lowest)] p-4 rounded-xl border border-[color:var(--outline-variant)]/50 flex flex-col md:flex-row md:items-center justify-between gap-4 group transition-opacity ${c.status !== 'open' ? 'opacity-60 grayscale' : ''}`}>
                 <div className="flex items-center gap-4">
-                  <div className={`w-2 h-10 rounded ${c.priority === 'High' ? 'bg-red-400' : 'bg-yellow-400'}`} />
+                  <div className={`w-2 h-10 rounded-full ${c.priority === 'High' ? 'bg-[#ef4444]' : 'bg-[#f59e0b]'}`} />
                   <div>
-                    <p className="text-sm font-semibold text-slate-900 line-clamp-1">{c.text}</p>
+                    <p className="font-headline text-sm font-bold text-[color:var(--on-surface)] line-clamp-1">{c.text}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase px-1.5 py-0.5 border border-slate-100 rounded bg-slate-50">{c.category}</span>
-                      <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleString()}</span>
+                      <span className="text-[10px] font-bold text-[color:var(--on-surface-variant)] uppercase px-2 py-0.5 border border-[color:var(--outline-variant)]/50 rounded bg-[color:var(--surface-container)]">{c.category}</span>
+                      <span className="text-[10px] text-[color:var(--outline)]">{new Date(c.created_at).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-1 rounded capitalize ${c.status === 'open' ? 'bg-indigo-50 text-indigo-600' : 'bg-green-50 text-green-600'}`}>
-                  {c.status}
-                </span>
+                <div className="flex items-center gap-3 self-end md:self-auto">
+                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-[color:var(--surface-container)]`}>
+                      {c.status}
+                    </span>
+                    <button 
+                        onClick={() => handleToggleStatus(c.id, c.status)}
+                        className={`text-[10px] flex items-center gap-1 font-bold px-3 py-1.5 rounded transition-colors ${c.status === 'open' ? 'bg-[color:var(--on-surface)] text-[color:var(--surface-container-lowest)] hover:bg-[color:var(--inverse-surface)]' : 'bg-[color:var(--primary)] text-[color:var(--surface-container-lowest)] hover:bg-[color:var(--primary-container)]'}`}
+                    >
+                       <span className="material-symbols-outlined text-[14px]">{(c.status === 'open') ? 'check_circle' : 'replay'}</span>
+                       {c.status === 'open' ? 'Mark Resolved' : 'Reopen'}
+                    </button>
+                </div>
               </div>
             ))}
           </div>
