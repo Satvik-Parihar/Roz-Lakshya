@@ -62,9 +62,11 @@ export default function LoginPage() {
         <section className="w-full max-w-md rounded-xl border border-[color:var(--outline-variant)]/60 bg-[color:var(--surface-container-lowest)] p-8 shadow-sm md:p-9">
           <div className="mb-7 text-center">
             <div className="mb-4 inline-flex items-center gap-2">
-              <span className="material-symbols-outlined text-3xl text-[color:var(--primary)]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                dataset
-              </span>
+              <img
+                src="/roz-lakshya-auth-logo.webp"
+                alt="Roz-Lakshya logo"
+                className="h-10 w-auto object-contain"
+              />
               <span className="font-headline text-xl font-bold tracking-tight text-[color:var(--on-surface)]">Roz-Lakshya</span>
             </div>
             <h1 className="font-headline text-2xl font-bold text-[color:var(--on-surface)]">Welcome back</h1>
