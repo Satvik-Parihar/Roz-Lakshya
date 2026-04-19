@@ -156,7 +156,6 @@ export default function ExecutionSequence() {
                           {task.title}
                         </h3>
                         <div className="mt-2 inline-flex items-start gap-1.5 rounded-lg bg-[color:var(--secondary-container)] px-2 py-1 text-xs font-semibold text-[color:var(--on-secondary-container)] max-w-full">
-                          <span className="shrink-0">💡</span>
                           <span className="break-words leading-relaxed">{item.reason}</span>
                         </div>
                       </div>
@@ -166,13 +165,13 @@ export default function ExecutionSequence() {
                     </div>
 
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[color:var(--on-surface-variant)] font-semibold uppercase tracking-wider">
-                      <span>⌛ Effort: {task.effort ?? 'N/A'}</span>
-                      <span>🔥 Score: {score.toFixed(2)}</span>
+                      <span>Effort: {task.effort ?? 'N/A'}</span>
+                      <span>Score: {score.toFixed(2)}</span>
                       {task.deadline_days && (
-                        <span>📅 {task.deadline_days}d deadline</span>
+                        <span>Deadline: {task.deadline_days}d</span>
                       )}
                       {task.assignee && task.assignee !== 'Unassigned' && (
-                        <span>👤 {task.assignee}</span>
+                        <span>Assignee: {task.assignee}</span>
                       )}
                     </div>
                   </div>

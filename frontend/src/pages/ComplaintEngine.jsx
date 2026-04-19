@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import PriorityFooter from '../components/PriorityFooter';
 import PriorityHeader from '../components/PriorityHeader';
 import { complaintApi, taskApi } from '../api/taskApi';
+import { getAuthSnapshot } from '../utils/auth';
 
 export default function ComplaintEngine() {
   const [text, setText] = useState('');
@@ -122,6 +123,19 @@ export default function ComplaintEngine() {
     }
   };
 
+  const auth = useMemo(() => getAuthSnapshot(), []);
+  const isAdmin = auth.isAdmin;
+
+  const handleResolve = async (id, currentStatus) => {
+    if (currentStatus === 'resolved') return;
+    try {
+      await complaintApi.updateStatus(id, 'resolved');
+      await loadComplaints();
+    } catch (err) {
+      console.error('Failed to resolve complaint', err);
+    }
+  };
+
   return (
     <div className=" min-h-screen flex flex-col">
       <PriorityHeader appMode />
@@ -132,169 +146,126 @@ export default function ComplaintEngine() {
             Complaint Engine
           </h1>
           <p className="mt-1 text-sm text-[color:var(--on-surface-variant)]">
-            Intelligent classification and priority boosting
+            {isAdmin ? 'System-wide monitoring and classification' : 'Issues linked to your assigned tasks'}
           </p>
         </section>
 
-        <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
-          <h2 className="text-lg font-semibold mb-4">Register New Complaint</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-400 uppercase">Channel</label>
-              <select
-                value={channel}
-                onChange={(e) => setChannel(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-              >
-                <option value="email">Email</option>
-                <option value="call">Call</option>
-                <option value="direct">Direct</option>
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-400 uppercase">Input Text</label>
-              <textarea
-                rows={4}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Describe the issue in detail..."
-                className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1" ref={taskMenuRef}>
-              <label className="text-xs font-bold text-slate-400 uppercase">Task Number / Title (Optional)</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={taskQuery}
-                  onFocus={() => setTaskOpen(true)}
-                  onChange={(e) => {
-                    setTaskQuery(e.target.value);
-                    setTaskOpen(true);
-                  }}
-                  placeholder="Search by task number, title, or member"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 pr-16 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-                {taskQuery && (
-                  <button
-                    type="button"
-                    onClick={clearTaskSelection}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100"
-                  >
-                    Clear
-                  </button>
-                )}
+        {isAdmin && (
+          <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
+            <h2 className="text-lg font-semibold mb-4">Register New Complaint</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-slate-400 uppercase">Channel</label>
+                <select
+                  value={channel}
+                  onChange={(e) => setChannel(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                >
+                  <option value="email">Email</option>
+                  <option value="call">Call</option>
+                  <option value="direct">Direct</option>
+                </select>
               </div>
 
-              {taskOpen && (
-                <div className="max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow">
-                  {tasksLoading ? (
-                    <p className="px-3 py-2 text-sm text-slate-500">Loading tasks...</p>
-                  ) : taskLookupError ? (
-                    <p className="px-3 py-2 text-sm text-red-600">{taskLookupError}</p>
-                  ) : filteredTasks.length === 0 ? (
-                    <p className="px-3 py-2 text-sm text-slate-500">No matching tasks found.</p>
-                  ) : (
-                    <ul>
-                      {filteredTasks.map((task) => (
-                        <li key={task.id}>
-                          <button
-                            type="button"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => handleTaskSelect(task)}
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
-                          >
-                            {getTaskLabel(task)}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-slate-400 uppercase">Input Text</label>
+                <textarea
+                  rows={4}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="Describe the issue in detail..."
+                  className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1" ref={taskMenuRef}>
+                <label className="text-xs font-bold text-slate-400 uppercase">Task Number / Title (Optional)</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={taskQuery}
+                    onFocus={() => setTaskOpen(true)}
+                    onChange={(e) => {
+                      setTaskQuery(e.target.value);
+                      setTaskOpen(true);
+                    }}
+                    placeholder="Search by task number, title, or member"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 pr-16 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                  {taskQuery && (
+                    <button
+                      type="button"
+                      onClick={clearTaskSelection}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-1 text-xs text-slate-500 hover:bg-slate-100"
+                    >
+                      Clear
+                    </button>
                   )}
                 </div>
-              )}
-            </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-400 uppercase">Linked Member</label>
-              <input
-                type="text"
-                readOnly
-                value={selectedTask ? (selectedTask.assignee_name || selectedTask.assignee || 'Unassigned') : 'Not selected'}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
-            >
-              {loading ? 'AI Classifying...' : 'Submit Complaint'}
-            </button>
-          </form>
-
-          {message && <p className={`mt-3 text-sm ${message.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>{message}</p>}
-        </section>
-
-        {result && (
-          <section className="animate-in slide-in-from-bottom-4 fade-in rounded-2xl bg-indigo-600 p-4 text-white shadow-xl duration-500 sm:p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded uppercase tracking-widest">{result.category}</span>
-                <h3 className="mt-2 text-xl font-bold sm:text-2xl">AI Classification Result</h3>
-              </div>
-              <div className="text-right">
-                <p className="text-xs font-bold opacity-70 uppercase">Priority</p>
-                <p className={`text-xl font-black ${result.priority === 'High' ? 'text-red-300' : 'text-yellow-300'}`}>{result.priority}</p>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs font-bold opacity-70 uppercase mb-2">Resolution Steps</p>
-                  <ul className="space-y-2">
-                    {result.resolution_steps?.map((step, i) => (
-                      <li key={i} className="flex gap-2 text-sm">
-                        <span className="bg-white/20 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0">{i + 1}</span>
-                        {step}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              <div className="bg-white/10 rounded-xl p-4 space-y-4 border border-white/10">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">SLA Deadline</span>
-                  <span className="text-sm font-bold bg-white text-indigo-600 px-2 py-0.5 rounded">{result.sla_hours} hours</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span>Urgency Score</span>
-                  <span className="font-bold underline">{Number(result.urgency_score || 0).toFixed(1)}/100</span>
-                </div>
-                {result.linked_task_id && (
-                  <div className="pt-2 border-t border-white/20">
-                    <p className="text-[10px] font-bold opacity-70 uppercase mb-1">Impact Bridge</p>
-                    <p className="text-sm">
-                      Linked to Task #{result.linked_task_number || result.linked_task_id}
-                      {result.linked_member_name ? ` (${result.linked_member_name})` : ''}
-                    </p>
-                    <p className="text-[10px] text-indigo-200">Automatically boosted associated task priority score.</p>
+                {taskOpen && (
+                  <div className="max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow">
+                    {tasksLoading ? (
+                      <p className="px-3 py-2 text-sm text-slate-500">Loading tasks...</p>
+                    ) : taskLookupError ? (
+                      <p className="px-3 py-2 text-sm text-red-600">{taskLookupError}</p>
+                    ) : filteredTasks.length === 0 ? (
+                      <p className="px-3 py-2 text-sm text-slate-500">No matching tasks found.</p>
+                    ) : (
+                      <ul>
+                        {filteredTasks.map((task) => (
+                          <li key={task.id}>
+                            <button
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => handleTaskSelect(task)}
+                              className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
+                            >
+                              {getTaskLabel(task)}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 )}
               </div>
-            </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-slate-400 uppercase">Linked Member</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={selectedTask ? (selectedTask.assignee_name || selectedTask.assignee || 'Unassigned') : 'Not selected'}
+                  className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? 'AI Classifying...' : 'Submit Complaint'}
+              </button>
+            </form>
+
+            {message && <p className={`mt-3 text-sm ${message.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>{message}</p>}
           </section>
         )}
 
         <section className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-800">Recent Complaints</h2>
+          <h2 className="text-xl font-bold text-slate-800">
+            {isAdmin ? 'Recent Complaints' : 'Complaints Linked to You'}
+          </h2>
           <div className="grid grid-cols-1 gap-4">
+            {complaints.length === 0 && (
+              <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-400 font-medium">
+                No active complaints found.
+              </div>
+            )}
             {complaints.map((c) => (
-              <div key={c.id} className="group flex flex-col gap-3 rounded-xl border border-slate-100 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div key={c.id} className="group flex flex-col gap-3 rounded-xl border border-slate-100 bg-white p-4 sm:flex-row sm:items-center sm:justify-between transition-all hover:border-[color:var(--outline-variant)] hover:shadow-sm">
                 <div className="flex items-center gap-4">
                   <div className={`w-2 h-10 rounded ${c.priority === 'High' ? 'bg-red-400' : 'bg-yellow-400'}`} />
                   <div>
@@ -311,9 +282,19 @@ export default function ComplaintEngine() {
                     </div>
                   </div>
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-1 rounded capitalize ${c.status === 'open' ? 'bg-indigo-50 text-indigo-600' : 'bg-green-50 text-green-600'}`}>
-                  {c.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded capitalize ${c.status === 'open' ? 'bg-indigo-50 text-indigo-600' : 'bg-green-50 text-green-600'}`}>
+                    {c.status}
+                  </span>
+                  {c.status !== 'resolved' && (
+                    <button
+                      onClick={() => handleResolve(c.id, c.status)}
+                      className="rounded-lg bg-green-100 px-3 py-1.5 text-[10px] font-bold text-green-700 hover:bg-green-200 transition-colors"
+                    >
+                      Resolve
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

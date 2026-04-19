@@ -68,14 +68,17 @@ export default function TaskCard({ task }) {
               {task.complaint_boost > 0 && (
                 <span
                   title="Priority boosted by complaint"
-                  className="text-orange-500 cursor-help"
+                  className="material-symbols-outlined text-sm text-orange-500 leading-none cursor-help"
                 >
-                  🔔
+                  notifications_active
                 </span>
               )}
               {task.is_pinned && (
-                <span title="Pinned by admin" className="text-indigo-600 cursor-help">
-                  📌
+                <span 
+                  title="Pinned by admin" 
+                  className="material-symbols-outlined text-sm text-indigo-600 leading-none cursor-help"
+                >
+                  push_pin
                 </span>
               )}
               <PriorityBadge score={score} />
@@ -83,7 +86,12 @@ export default function TaskCard({ task }) {
 
             {/* Assignee + score compact */}
             <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
-              {task.assignee && <span>👤 {task.assignee}</span>}
+              {task.assignee && (
+                <span className="flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">person</span>
+                  {task.assignee}
+                </span>
+              )}
               <span>Score: <strong className="text-[color:var(--on-surface)]">{score.toFixed(2)}</strong></span>
             </div>
           </div>
@@ -95,14 +103,14 @@ export default function TaskCard({ task }) {
               className="rounded-lg p-1.5 text-[color:var(--on-surface-variant)] transition-colors hover:bg-[color:var(--surface-container)] hover:text-[color:var(--primary)]"
               title="Edit task"
             >
-              ✏️
+              <span className="material-symbols-outlined text-lg">edit</span>
             </button>
             <button
               onClick={() => setShowDelete(true)}
               className="rounded-lg p-1.5 text-[color:var(--on-surface-variant)] transition-colors hover:bg-rose-100 hover:text-rose-600"
               title="Delete task"
             >
-              🗑️
+              <span className="material-symbols-outlined text-lg">delete</span>
             </button>
           </div>
         </div>

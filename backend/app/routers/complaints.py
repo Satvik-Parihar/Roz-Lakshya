@@ -141,7 +141,14 @@ async def list_complaints(
     await db.execute(text("SET LOCAL statement_timeout = '12000ms'"))
     safe_limit = max(1, min(limit, 200))
 
-    stmt = select(Complaint).offset(skip).limit(safe_limit).order_by(Complaint.id.desc())
+    from app.security import is_admin_user
+    stmt = select(Complaint)
+    
+    if not is_admin_user(current_user):
+        # Filter complaints where the linked task is assigned to the current user
+        stmt = stmt.join(Task, Complaint.linked_task_id == Task.id).where(Task.assignee_id == current_user.id)
+    
+    stmt = stmt.offset(skip).limit(safe_limit).order_by(Complaint.id.desc())
     try:
         res = await db.execute(stmt)
     except DBAPIError:

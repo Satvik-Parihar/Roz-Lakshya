@@ -37,8 +37,8 @@ export default function CountdownTimer({ deadline }) {
     : 'text-green-700';
 
   return (
-    <span className={`text-xs ${cls} tabular-nums`}>
-      ⏱ {text}
+    <span className={`inline-flex items-center gap-1 text-xs ${cls} tabular-nums`}>
+      <span className="material-symbols-outlined text-sm">schedule</span> {text}
     </span>
   );
 }

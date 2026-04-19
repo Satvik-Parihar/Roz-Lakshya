@@ -30,7 +30,7 @@ export default function TaskExpandView({ task }) {
             title="Priority boosted by complaint"
             className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 cursor-help"
           >
-            🔔 +{task.complaint_boost} boost
+            <span className="material-symbols-outlined text-xs">notifications_active</span> +{task.complaint_boost} boost
           </span>
         )}
 
@@ -56,8 +56,8 @@ export default function TaskExpandView({ task }) {
       {/* AI Reasoning */}
       {task.reasoning && (
         <div className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-low)] p-4">
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[color:var(--primary)]">
-            🤖 AI Reasoning
+          <p className="flex items-center gap-1.5 mb-1.5 text-xs font-semibold uppercase tracking-wide text-[color:var(--primary)]">
+            <span className="material-symbols-outlined text-sm">smart_toy</span> AI Reasoning
           </p>
           <p className="text-sm leading-relaxed text-[color:var(--on-surface)]">{task.reasoning}</p>
         </div>
