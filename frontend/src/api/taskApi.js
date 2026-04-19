@@ -96,13 +96,15 @@ const mapTask = (task) => ({
   status: normalizeStatus(task.status),
   workload: Number(task.workload ?? 5),
   deadline_days: Number(task.deadline_days ?? 7),
+  manual_priority_boost: Number(task.manual_priority_boost ?? 0),
+  is_pinned: Boolean(task.is_pinned ?? false),
   assignee: task.assignee_name || (task.assignee_id ? `User ${task.assignee_id}` : 'Unassigned'),
   reasoning: task.ai_reasoning || task.reasoning || 'Score computed by AI engine.'
 });
 
 export const taskApi = {
-  getAll: async () => {
-    const res = await api.get('/tasks/');
+  getAll: async (limit = 300) => {
+    const res = await api.get(`/tasks/?limit=${limit}`);
     return { ...res, data: res.data.map(mapTask) };
   },
   create: async (data) => {
@@ -124,6 +126,13 @@ export const taskApi = {
 
 export const usersApi = {
   getAll: (limit = 500) => api.get(`/users/?limit=${limit}`),
+  getAdmins: (limit = 200) => api.get(`/users/admins?limit=${limit}`),
+  getMe: () => api.get('/users/me'),
+  createEmployee: (data) => api.post('/users/employees', data),
+};
+
+export const adminApi = {
+  overrideTask: (id, data) => api.post(`/tasks/${id}/override`, data),
 };
 
 export const complaintApi = {
@@ -146,10 +155,12 @@ export const dashboardApi = {
   getWorkload: (groupBy = 'department') => api.get(`/dashboard/workload?group_by=${groupBy}`),
   getBottlenecks: () => api.get('/dashboard/bottlenecks'),
   getDepartments: () => api.get('/dashboard/departments'),
+  getOperationalNotes: () => api.get('/dashboard/operational-notes'),
 };
 
 export const alertsApi = {
   getActive: () => api.get('/alerts/active'),
   markRead: (id) => api.patch(`/alerts/${id}/read`),
   markAllRead: () => api.patch('/alerts/read-all'),
+  triggerCheck: () => api.post('/alerts/trigger-check'),
 };

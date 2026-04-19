@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     GROQ_API_KEY: str = ""  # Free-tier LLM API — sign up at console.groq.com
+    ENABLE_SCHEDULER: bool = False
 
     model_config = {
         "env_file": ".env",

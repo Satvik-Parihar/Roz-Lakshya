@@ -3,7 +3,6 @@ from uuid import uuid4
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.pool import NullPool
 
 from app.config import settings
 
@@ -13,7 +12,11 @@ engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.SQL_ECHO,
     future=True,
-    poolclass=NullPool,
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=1800,
     # Support both unstable networks and Supabase/PgBouncer setups.
     connect_args={
         "timeout": 10,
@@ -52,6 +55,11 @@ async def init_db() -> None:
         # Keep legacy databases compatible with auth fields used by signup/login.
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255)"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)"))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false"))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS company_name VARCHAR(255)"))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS company_domain VARCHAR(255)"))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS must_reset_password BOOLEAN DEFAULT false"))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS created_by_id INTEGER"))
         await conn.execute(
             text(
                 "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email_not_null "

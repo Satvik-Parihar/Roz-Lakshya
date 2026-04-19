@@ -165,6 +165,33 @@ async def compute_priority_score(task_data: dict) -> dict:
         normalized = ((predicted - _MODEL_SCORE_MIN) / (_MODEL_SCORE_MAX - _MODEL_SCORE_MIN + 1e-9)) * 100.0
         score = max(0.0, min(100.0, normalized + complaint_boost))
         reasoning = _priority_reasoning(deadline_days, impact, effort, workload, complaint_boost)
+        reasoning_notes = []
+
+        # 1) Apply manual admin boost.
+        manual_boost = float(task_data.get("manual_priority_boost", 0.0) or 0.0)
+        if manual_boost:
+            score = min(100.0, score + manual_boost)
+            reasoning_notes.append(f"Admin boost +{manual_boost:.1f}")
+
+        # 2) If pinned by admin, this task stays at top priority.
+        if task_data.get("is_pinned"):
+            score = 100.0
+            reasoning = "Pinned by admin - highest priority."
+            reasoning_notes.append("Pinned task")
+
+        # 3) Adaptive learning boost from completion history.
+        completion_rate = float(task_data.get("user_completion_rate", 0.5) or 0.5)
+        completion_rate = max(0.0, min(1.0, completion_rate))
+        adaptive_boost = (completion_rate - 0.5) * 10.0  # range: -5 .. +5
+        if not task_data.get("is_pinned"):
+            score = max(0.0, min(100.0, score + adaptive_boost))
+        if abs(adaptive_boost) >= 0.05:
+            reasoning_notes.append(
+                f"Adaptive completion adjustment {adaptive_boost:+.1f} (rate {completion_rate:.2f})"
+            )
+
+        if reasoning_notes:
+            reasoning = f"{reasoning} | {'; '.join(reasoning_notes)}"
 
         _score_cache[cache_key] = {
             "score": score,

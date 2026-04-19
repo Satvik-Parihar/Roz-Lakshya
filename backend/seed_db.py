@@ -56,7 +56,7 @@ def main():
     CREATE TABLE users (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
-        role VARCHAR(20) NOT NULL CHECK (role IN ('team_member', 'manager', 'teacher')),
+        role VARCHAR(20) NOT NULL CHECK (role IN ('team_member', 'manager', 'admin')),
         created_at TIMESTAMP DEFAULT NOW()
     );
     
@@ -118,7 +118,7 @@ def main():
       ('Ravi Kumar', 'team_member'),
       ('Priya Sharma', 'team_member'),
       ('Ankit Mehta', 'manager'),
-      ('Dr. Sunita Rao', 'teacher');
+            ('Dr. Sunita Rao', 'admin');
     """)
 
     # STEP 3: Load CSV

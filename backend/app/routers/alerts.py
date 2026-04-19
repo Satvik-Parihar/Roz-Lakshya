@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,6 +7,7 @@ from sqlalchemy.future import select
 
 from app.database import get_db
 from app.models import Alert
+from app.security import ensure_password_reset_completed, get_current_user
 
 router = APIRouter(
     prefix="/alerts",
@@ -25,7 +28,12 @@ def _serialize_alert(alert: Alert) -> dict:
 
 
 @router.get("/active")
-async def get_active_alerts(db: AsyncSession = Depends(get_db)):
+async def get_active_alerts(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    ensure_password_reset_completed(current_user)
+
     try:
         result = await db.execute(
             select(Alert)
@@ -39,7 +47,12 @@ async def get_active_alerts(db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/read-all")
-async def mark_all_alerts_read(db: AsyncSession = Depends(get_db)):
+async def mark_all_alerts_read(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    ensure_password_reset_completed(current_user)
+
     try:
         stmt = sa_update(Alert).where(Alert.is_read == False).values(is_read=True)
         result = await db.execute(stmt)
@@ -50,7 +63,13 @@ async def mark_all_alerts_read(db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/{alert_id}/read")
-async def mark_alert_read(alert_id: int, db: AsyncSession = Depends(get_db)):
+async def mark_alert_read(
+    alert_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    ensure_password_reset_completed(current_user)
+
     try:
         result = await db.execute(select(Alert).where(Alert.id == alert_id))
         alert = result.scalars().first()
@@ -65,3 +84,18 @@ async def mark_alert_read(alert_id: int, db: AsyncSession = Depends(get_db)):
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to mark alert as read: {exc}")
+
+
+@router.post("/trigger-check")
+async def trigger_alert_check(current_user=Depends(get_current_user)):
+    """Manually trigger deadline and SLA checks (demo helper)."""
+    ensure_password_reset_completed(current_user)
+
+    try:
+        from app.services.scheduler import check_sla_breaches, check_task_deadlines
+
+        asyncio.create_task(check_task_deadlines())
+        asyncio.create_task(check_sla_breaches())
+        return {"triggered": True, "message": "Alert check jobs started"}
+    except Exception as exc:
+        return {"triggered": False, "error": str(exc)}

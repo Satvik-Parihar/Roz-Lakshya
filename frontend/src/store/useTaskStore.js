@@ -2,7 +2,11 @@ import { create } from 'zustand';
 import { taskApi } from '../api/taskApi';
 
 const sortByPriority = (tasks) =>
-  [...tasks].sort((a, b) => (b.priority_score ?? 0) - (a.priority_score ?? 0));
+  [...tasks].sort((a, b) => {
+    const pinDelta = Number(Boolean(b.is_pinned)) - Number(Boolean(a.is_pinned));
+    if (pinDelta !== 0) return pinDelta;
+    return (b.priority_score ?? 0) - (a.priority_score ?? 0);
+  });
 
 const useTaskStore = create((set, get) => ({
   tasks: [],
@@ -15,7 +19,12 @@ const useTaskStore = create((set, get) => ({
       const res = await taskApi.getAll();
       set({ tasks: sortByPriority(res.data), loading: false });
     } catch (err) {
-      set({ error: err?.response?.data?.detail ?? 'Failed to load tasks', loading: false });
+      const timeoutError = err?.code === 'ECONNABORTED' ? 'Request timed out while loading tasks' : null;
+      const networkError = !err?.response ? 'Unable to reach backend server' : null;
+      set({
+        error: timeoutError || err?.response?.data?.detail || networkError || 'Failed to load tasks',
+        loading: false,
+      });
     }
   },
 

@@ -4,6 +4,7 @@ import { usersApi } from '../api/taskApi';
 import TaskCard from '../components/TaskCard';
 import PriorityHeader from '../components/PriorityHeader';
 import PriorityFooter from '../components/PriorityFooter';
+import { getAuthSnapshot } from '../utils/auth';
 
 // ─── Skeleton loader ───────────────────────────────────────────────────────────
 function TaskSkeleton() {
@@ -259,13 +260,15 @@ const normalizeStatus = (status) => String(status || 'todo').toLowerCase().repla
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function TaskBoard() {
   const { tasks, loading, error, fetchTasks } = useTaskStore();
+  const auth = useMemo(() => getAuthSnapshot(), []);
+  const isAdmin = Boolean(auth.isAdmin);
   const [showCreate, setShowCreate] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchTasks();
-    const interval = setInterval(fetchTasks, 5 * 60 * 1000); // 5 min
+    const interval = setInterval(fetchTasks, 20000);
     return () => clearInterval(interval);
   }, [fetchTasks]);
 
@@ -284,25 +287,27 @@ export default function TaskBoard() {
     <div className="brand-page-bg min-h-screen">
       <PriorityHeader appMode />
 
-      <main className="mx-auto w-full max-w-6xl px-6 py-10 space-y-6">
-        <section className="stagger-enter rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-6 shadow-sm">
+      <main className="mx-auto w-full max-w-6xl space-y-6 px-3 py-6 sm:px-6 sm:py-10">
+        <section className="stagger-enter rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-4 shadow-sm sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-mono text-xs uppercase tracking-widest text-[color:var(--primary)]">Execution Console</p>
-              <h1 className="mt-1 text-3xl font-headline font-bold tracking-tight text-[color:var(--on-surface)]">
+              <h1 className="mt-1 text-2xl font-headline font-bold tracking-tight text-[color:var(--on-surface)] sm:text-3xl">
                 Task Board
               </h1>
               <p className="mt-1 text-sm text-[color:var(--on-surface-variant)]">
                 {tasks.length} task{tasks.length !== 1 ? 's' : ''} prioritized by AI score.
               </p>
             </div>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-[color:var(--on-surface)] px-4 py-2 text-sm font-semibold text-[color:var(--surface-container-lowest)] transition-colors hover:bg-[color:var(--inverse-surface)]"
-            >
-              <span className="material-symbols-outlined text-base">add</span>
-              New Task
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setShowCreate(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-[color:var(--on-surface)] px-4 py-2 text-sm font-semibold text-[color:var(--surface-container-lowest)] transition-colors hover:bg-[color:var(--inverse-surface)]"
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+                New Task
+              </button>
+            )}
           </div>
         </section>
 
@@ -310,7 +315,7 @@ export default function TaskBoard() {
         {/* ── Filters ── */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Search */}
-          <div className="relative flex-1 min-w-48">
+          <div className="relative min-w-[180px] flex-1">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-base text-[color:var(--on-surface-variant)]">search</span>
             <input
               type="text"
@@ -380,7 +385,7 @@ export default function TaskBoard() {
         )}
       </main>
 
-      {showCreate && <CreateTaskModal onClose={() => setShowCreate(false)} />}
+      {showCreate && isAdmin && <CreateTaskModal onClose={() => setShowCreate(false)} />}
 
       <PriorityFooter />
     </div>

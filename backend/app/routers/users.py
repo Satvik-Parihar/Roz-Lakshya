@@ -1,9 +1,4 @@
-import base64
-import hashlib
-import hmac
-import json
-import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -12,52 +7,38 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models import User
-from app.schemas import LoginRequest, LoginResponse, SignupRequest, SignupResponse, UserListItem
+from app.schemas import (
+    EmployeeCreateRequest,
+    EmployeeCreateResponse,
+    LoginRequest,
+    LoginResponse,
+    PasswordResetRequest,
+    PasswordResetResponse,
+    SignupRequest,
+    SignupResponse,
+    UserListItem,
+)
+from app.security import (
+    create_jwt_token,
+    generate_temp_password,
+    get_current_user,
+    hash_password,
+    is_admin_user,
+    require_admin,
+    verify_password,
+)
 
 router = APIRouter(
     prefix="/users",
     tags=["users"],
 )
 
-HARDCODED_EMAIL = "admin@gmail.com"
-HARDCODED_PASSWORD = "admin123"
-
 ROLE_MAP = {
     "team member": "team_member",
     "team_member": "team_member",
-    "manager": "manager",
-    "subject teacher": "teacher",
-    "teacher": "teacher",
+    "employee": "team_member",
+    "admin": "admin",
 }
-
-
-def _b64url_encode(data: bytes) -> str:
-    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("utf-8")
-
-
-def _create_jwt_token(subject: str, expires_delta: timedelta) -> str:
-    if settings.JWT_ALGORITHM != "HS256":
-        raise HTTPException(status_code=500, detail="Unsupported JWT algorithm")
-
-    now = datetime.now(timezone.utc)
-    payload = {
-        "sub": subject,
-        "iat": int(now.timestamp()),
-        "exp": int((now + expires_delta).timestamp()),
-    }
-    header = {"alg": "HS256", "typ": "JWT"}
-
-    header_b64 = _b64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
-    payload_b64 = _b64url_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
-    signing_input = f"{header_b64}.{payload_b64}".encode("utf-8")
-
-    signature = hmac.new(
-        settings.JWT_SECRET_KEY.encode("utf-8"),
-        signing_input,
-        hashlib.sha256,
-    ).digest()
-    signature_b64 = _b64url_encode(signature)
-    return f"{header_b64}.{payload_b64}.{signature_b64}"
 
 
 def _normalize_role(raw_role: str) -> str:
@@ -72,33 +53,43 @@ def _normalize_role(raw_role: str) -> str:
     return normalized
 
 
-def _hash_password(password: str) -> str:
-    iterations = 200_000
-    salt = secrets.token_bytes(16)
-    derived = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
-    salt_b64 = base64.urlsafe_b64encode(salt).decode("utf-8")
-    hash_b64 = base64.urlsafe_b64encode(derived).decode("utf-8")
-    return f"pbkdf2_sha256${iterations}${salt_b64}${hash_b64}"
-
-
-def _verify_password(password: str, stored_hash: str) -> bool:
-    try:
-        algorithm, iter_text, salt_b64, hash_b64 = stored_hash.split("$", 3)
-        if algorithm != "pbkdf2_sha256":
-            return False
-        iterations = int(iter_text)
-        salt = base64.urlsafe_b64decode(salt_b64.encode("utf-8"))
-        expected = base64.urlsafe_b64decode(hash_b64.encode("utf-8"))
-        candidate = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
-        return hmac.compare_digest(candidate, expected)
-    except Exception:
-        return False
+def _create_user_login_response(user: User) -> LoginResponse:
+    normalized_email = str(user.email or "").strip().lower()
+    response_role = "admin" if bool(user.is_admin) else str(user.role or "team_member")
+    token = create_jwt_token(
+        subject=normalized_email,
+        expires_delta=timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
+        extra_payload={
+            "uid": user.id,
+            "role": response_role,
+            "is_admin": bool(user.is_admin),
+            "must_reset_password": bool(user.must_reset_password),
+            "company_name": user.company_name,
+        },
+    )
+    return LoginResponse(
+        access_token=token,
+        user_id=user.id,
+        role=response_role,
+        is_admin=bool(user.is_admin),
+        must_reset_password=bool(user.must_reset_password),
+    )
 
 
 @router.post("/signup", response_model=SignupResponse, status_code=status.HTTP_201_CREATED)
-async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
-    normalized_email = payload.email.strip().lower()
+async def signup_admin_company(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
+    has_existing_admin = (
+        await db.scalar(
+            select(User.id).where((User.is_admin.is_(True)) | (User.role == "admin")).limit(1)
+        )
+    ) is not None
+    if has_existing_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin company is already registered. Employees must be added by admin.",
+        )
 
+    normalized_email = payload.admin_email.strip().lower()
     existing_user = await db.execute(select(User).where(User.email == normalized_email))
     if existing_user.scalars().first() is not None:
         raise HTTPException(
@@ -107,42 +98,144 @@ async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
         )
 
     user = User(
-        name=payload.name.strip(),
-        role=_normalize_role(payload.role),
+        name=payload.admin_name.strip(),
+        role="manager",
+        is_admin=True,
+        company_name=payload.company_name.strip(),
+        company_domain=(payload.company_domain or "").strip().lower() or None,
         email=normalized_email,
-        password_hash=_hash_password(payload.password),
+        password_hash=hash_password(payload.password),
+        must_reset_password=False,
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
 
-    token = _create_jwt_token(
-        subject=normalized_email,
-        expires_delta=timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
-    )
+    login_response = _create_user_login_response(user)
     return SignupResponse(
-        access_token=token,
+        access_token=login_response.access_token,
         user_id=user.id,
         name=user.name,
         email=user.email or normalized_email,
-        role=user.role,
+        role="admin",
+        company_name=user.company_name,
+        is_admin=True,
+    )
+
+
+@router.post("/employees", response_model=EmployeeCreateResponse, status_code=status.HTTP_201_CREATED)
+async def create_employee(
+    payload: EmployeeCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_admin: User = Depends(require_admin),
+):
+    normalized_email = payload.email.strip().lower()
+
+    existing_user = await db.execute(select(User).where(User.email == normalized_email))
+    if existing_user.scalars().first() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An employee with this email already exists",
+        )
+
+    role = _normalize_role(payload.role)
+    create_admin = role == "admin"
+    stored_role = "manager" if create_admin else role
+
+    temp_password = generate_temp_password()
+    employee = User(
+        name=payload.name.strip(),
+        role=stored_role,
+        is_admin=create_admin,
+        email=normalized_email,
+        password_hash=hash_password(temp_password),
+        must_reset_password=True,
+        created_by_id=current_admin.id,
+        company_name=current_admin.company_name,
+        company_domain=current_admin.company_domain,
+    )
+
+    db.add(employee)
+    await db.commit()
+    await db.refresh(employee)
+
+    return EmployeeCreateResponse(
+        user_id=employee.id,
+        name=employee.name,
+        email=employee.email or normalized_email,
+        role="admin" if bool(employee.is_admin) else employee.role,
+        temp_password=temp_password,
+        must_reset_password=True,
     )
 
 
 @router.get("/", response_model=list[UserListItem])
-async def list_users(limit: int = 500, db: AsyncSession = Depends(get_db)):
+async def list_users(
+    limit: int = 500,
+    db: AsyncSession = Depends(get_db),
+    current_admin: User = Depends(require_admin),
+):
     safe_limit = max(1, min(limit, 2000))
-    users_result = await db.execute(select(User).order_by(User.name.asc(), User.id.asc()).limit(safe_limit))
+
+    stmt = select(User)
+    if current_admin.company_name:
+        stmt = stmt.where(User.company_name == current_admin.company_name)
+
+    users_result = await db.execute(stmt.order_by(User.name.asc(), User.id.asc()).limit(safe_limit))
     users = users_result.scalars().all()
     return [
         UserListItem(
             id=user.id,
             name=user.name,
             email=user.email,
-            role=user.role,
+            role="admin" if bool(user.is_admin) else user.role,
+            is_admin=bool(user.is_admin),
+            company_name=user.company_name,
+            must_reset_password=bool(user.must_reset_password),
         )
         for user in users
     ]
+
+
+@router.get("/admins", response_model=list[UserListItem])
+async def list_admin_users(
+    limit: int = 200,
+    db: AsyncSession = Depends(get_db),
+    current_admin: User = Depends(require_admin),
+):
+    safe_limit = max(1, min(limit, 1000))
+
+    stmt = select(User).where(User.is_admin.is_(True))
+    if current_admin.company_name:
+        stmt = stmt.where(User.company_name == current_admin.company_name)
+
+    users_result = await db.execute(stmt.order_by(User.name.asc(), User.id.asc()).limit(safe_limit))
+    users = users_result.scalars().all()
+    return [
+        UserListItem(
+            id=user.id,
+            name=user.name,
+            email=user.email,
+            role="admin",
+            is_admin=True,
+            company_name=user.company_name,
+            must_reset_password=bool(user.must_reset_password),
+        )
+        for user in users
+    ]
+
+
+@router.get("/me", response_model=UserListItem)
+async def get_me(current_user: User = Depends(get_current_user)):
+    return UserListItem(
+        id=current_user.id,
+        name=current_user.name,
+        email=current_user.email,
+        role="admin" if bool(current_user.is_admin) else current_user.role,
+        is_admin=bool(current_user.is_admin),
+        company_name=current_user.company_name,
+        must_reset_password=bool(current_user.must_reset_password),
+    )
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -152,22 +245,37 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     user_result = await db.execute(select(User).where(User.email == normalized_email))
     user = user_result.scalars().first()
 
-    if user and user.password_hash and _verify_password(payload.password, user.password_hash):
-        token = _create_jwt_token(
-            subject=normalized_email,
-            expires_delta=timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
-        )
-        return LoginResponse(access_token=token)
-
-    # Temporary fallback for seeded/demo access.
-    if normalized_email != HARDCODED_EMAIL or payload.password != HARDCODED_PASSWORD:
+    if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
 
-    token = _create_jwt_token(
-        subject=normalized_email,
-        expires_delta=timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
-    )
-    return LoginResponse(access_token=token)
+    return _create_user_login_response(user)
+
+
+@router.post("/reset-password", response_model=PasswordResetResponse)
+async def reset_password(
+    payload: PasswordResetRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not verify_password(payload.old_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    if payload.old_password == payload.new_password:
+        raise HTTPException(status_code=400, detail="New password must be different from current password")
+
+    current_user.password_hash = hash_password(payload.new_password)
+    current_user.must_reset_password = False
+    await db.commit()
+
+    return PasswordResetResponse(success=True, message="Password reset successful")
+
+
+@router.get("/bootstrap-status")
+async def bootstrap_status(db: AsyncSession = Depends(get_db)):
+    has_admin = (
+        await db.scalar(select(User.id).where((User.is_admin.is_(True)) | (User.role == "admin")).limit(1))
+    ) is not None
+    return {"has_admin": has_admin}

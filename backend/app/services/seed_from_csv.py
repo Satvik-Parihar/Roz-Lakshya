@@ -58,6 +58,15 @@ def _normalize_name(value: str) -> str:
     return str(value or "").strip().lower()
 
 
+def _build_dummy_email(name: str, employee_id: str) -> str:
+    base = "".join(ch.lower() if ch.isalnum() else "." for ch in str(name or "employee").strip())
+    while ".." in base:
+        base = base.replace("..", ".")
+    base = base.strip(".") or "employee"
+    suffix = str(employee_id or "0").strip() or "0"
+    return f"{base}.{suffix}@employee.local"
+
+
 def _fill_priority_label(score: float, label: str) -> str:
     if pd.notna(label) and str(label).strip() != "":
         return str(label).strip()
@@ -153,18 +162,21 @@ def main() -> None:
         # STEP 1 — Users
         user_rows = []
         for _, row in employees_df.iterrows():
+            emp_id = str(row.get("employee_id", "")).strip()
             user_rows.append((
                 str(row["name"]).strip(),
                 _map_role(row.get("department"), row.get("designation")),
+                _build_dummy_email(row.get("name"), emp_id),
             ))
 
         execute_values(
             cur,
             """
-            INSERT INTO users (name, role)
+            INSERT INTO users (name, role, email)
             VALUES %s
             ON CONFLICT (name) DO UPDATE
-            SET role = EXCLUDED.role
+            SET role = EXCLUDED.role,
+                email = COALESCE(users.email, EXCLUDED.email)
             """,
             user_rows,
             page_size=500,

@@ -1,33 +1,47 @@
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional
+
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import case, func, text
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from datetime import datetime, timedelta, timezone
+
 from app.database import get_db
 from app.models import Task, User
-from app.schemas import TaskCreate, TaskUpdate, TaskResponse, TaskSequenceItem
-from typing import Optional, List
-import asyncio
+from app.security import ensure_password_reset_completed, get_current_user, is_admin_user
+from app.schemas import TaskCreate, TaskPriorityOverride, TaskResponse, TaskSequenceItem, TaskUpdate
 
-# Safe import of AI engine — fallback if P2 not ready
+# Safe import of AI engine - fallback if P2 not ready
 try:
-    from app.services.ai_engine import compute_priority_score, suggest_execution_order
+    from app.services.ai_engine import compute_priority_score, invalidate_cache, suggest_execution_order
 except ImportError:
     async def compute_priority_score(task):
         return {"score": 50.0, "reasoning": "AI engine not yet available"}
+
+    def invalidate_cache(task_id: str):
+        return None
+
     async def suggest_execution_order(tasks):
         return []
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"], redirect_slashes=False)
 
 ALLOWED_TASK_STATUSES = {"todo", "in-progress", "done"}
+TASK_RECENT_SCAN_WINDOW = 8000
 
-def get_priority_label(score: float) -> str:
+
+def _label_for_score(score: float) -> str:
     if score >= 70:
         return "High"
-    elif score >= 40:
+    if score >= 40:
         return "Medium"
-    else:
-        return "Low"
+    return "Low"
+
+
+def get_priority_label(score: float) -> str:
+    return _label_for_score(score)
 
 
 def normalize_task_status(status: Optional[str], default: str = "todo") -> str:
@@ -43,14 +57,53 @@ def normalize_task_status(status: Optional[str], default: str = "todo") -> str:
         detail="Invalid status. Allowed values: todo, in-progress, done",
     )
 
+
+async def get_user_completion_rate(user_id: Optional[int], db: AsyncSession) -> float:
+    if not user_id:
+        return 0.5
+
+    result = await db.execute(
+        select(
+            func.count(Task.id).label("total"),
+            func.sum(case((Task.status == "done", 1), else_=0)).label("done"),
+        ).where(Task.assignee_id == user_id)
+    )
+    row = result.first()
+    total = int(getattr(row, "total", 0) or 0)
+    done = int(getattr(row, "done", 0) or 0)
+    if total == 0:
+        return 0.5
+    return round(done / total, 3)
+
+
+async def _compute_task_priority(task: Task, db: AsyncSession) -> dict:
+    completion_rate = await get_user_completion_rate(task.assignee_id, db)
+    invalidate_cache(str(task.id))
+    return await compute_priority_score(
+        {
+            "id": task.id,
+            "title": task.title,
+            "deadline_days": task.deadline_days,
+            "effort": task.effort,
+            "impact": task.impact,
+            "workload": task.workload,
+            "complaint_boost": task.complaint_boost or 0.0,
+            "status": task.status,
+            "manual_priority_boost": task.manual_priority_boost or 0.0,
+            "is_pinned": bool(task.is_pinned),
+            "user_completion_rate": completion_rate,
+        }
+    )
+
+
 async def enrich_task(task: Task, db: AsyncSession) -> dict:
-    """Convert Task ORM object to TaskResponse-compatible dict"""
+    """Convert Task ORM object to TaskResponse-compatible dict."""
     assignee_name = None
     if task.assignee_id:
         result = await db.execute(select(User).filter(User.id == task.assignee_id))
         user = result.scalars().first()
         assignee_name = user.name if user else None
-    
+
     deadline = None
     if task.created_at and getattr(task, "deadline_days", None):
         deadline = task.created_at + timedelta(days=task.deadline_days)
@@ -59,46 +112,53 @@ async def enrich_task(task: Task, db: AsyncSession) -> dict:
         **task.__dict__,
         "assignee_name": assignee_name,
         "deadline": deadline,
+        "manual_priority_boost": float(task.manual_priority_boost or 0.0),
+        "is_pinned": bool(task.is_pinned),
     }
     task_dict.pop("_sa_instance_state", None)
     return task_dict
 
 
-# ENDPOINT 1: POST /tasks — Create task + trigger AI scoring
+def _assert_admin(current_user: User) -> None:
+    if not is_admin_user(current_user):
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+
+# ENDPOINT 1: POST /tasks - Create task + trigger AI scoring
 @router.post("/", response_model=TaskResponse, status_code=201)
-async def create_task(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
+async def create_task(
+    payload: TaskCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_password_reset_completed(current_user)
+    _assert_admin(current_user)
+
     res = await db.execute(select(Task).order_by(Task.task_id.desc()).limit(1))
     last_task = res.scalars().first()
     new_task_id = (last_task.task_id + 1) if last_task else 1
 
-    payload_dict = payload.model_dump() if hasattr(payload, 'model_dump') else payload.dict()
+    payload_dict = payload.model_dump() if hasattr(payload, "model_dump") else payload.dict()
     baseline_score = 50.0
     task = Task(
         **payload_dict,
         task_id=new_task_id,
         status="todo",
         complaint_boost=0.0,
+        manual_priority_boost=0.0,
+        is_pinned=False,
         priority_score=baseline_score,
-        priority_label=get_priority_label(baseline_score),
+        priority_label=_label_for_score(baseline_score),
         ai_reasoning="Score unavailable",
     )
     db.add(task)
     await db.flush()  # get task.id before commit
 
-    ai_result = await compute_priority_score({
-        "id": task.id,
-        "title": task.title,
-        "deadline_days": task.deadline_days,
-        "effort": task.effort,
-        "impact": task.impact,
-        "workload": task.workload,
-        "complaint_boost": task.complaint_boost,
-        "status": task.status,
-    })
+    ai_result = await _compute_task_priority(task, db)
     score = float(ai_result.get("score", baseline_score))
     reasoning = ai_result.get("reasoning", "Score unavailable")
     task.priority_score = score
-    task.priority_label = get_priority_label(score)
+    task.priority_label = _label_for_score(score)
     task.ai_reasoning = reasoning
     task.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
@@ -107,89 +167,154 @@ async def create_task(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
     return await enrich_task(task, db)
 
 
-# ENDPOINT 2: GET /tasks — All tasks sorted by priority_score DESC
+# ENDPOINT 2: GET /tasks - All tasks sorted by priority_score DESC
 @router.get("/", response_model=List[TaskResponse])
-async def get_tasks(user_id: Optional[int] = None, limit: int = 100, db: AsyncSession = Depends(get_db)):
-    # Use a join to avoid N+1 queries for assignee names
-    # Note: We keep TaskResponse structure by mapping the result
+async def get_tasks(
+    user_id: Optional[int] = None,
+    limit: int = 300,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_password_reset_completed(current_user)
+
     from sqlalchemy.orm import joinedload
-    
-    query = select(Task).options(joinedload(Task.assignee))
-    if user_id is not None:
-        query = query.filter(Task.assignee_id == user_id)
-    
-    # Apply limit to prevent hanging with 50,000 tasks
-    query = query.order_by(Task.priority_score.desc()).limit(limit)
-    
-    result = await db.execute(query)
+
+    await db.execute(text("SET LOCAL statement_timeout = '15000ms'"))
+    safe_limit = max(1, min(limit, 1000))
+    admin_user = is_admin_user(current_user)
+    scoped_user_ids: list[int]
+
+    if admin_user:
+        if user_id is not None:
+            scoped_user_ids = [int(user_id)]
+        elif current_user.company_name:
+            users_result = await db.execute(select(User.id).where(User.company_name == current_user.company_name).limit(4000))
+            scoped_user_ids = [int(uid) for uid in users_result.scalars().all()]
+        else:
+            users_result = await db.execute(
+                select(User.id).where((User.id == current_user.id) | (User.created_by_id == current_user.id)).limit(4000)
+            )
+            scoped_user_ids = [int(uid) for uid in users_result.scalars().all()]
+    else:
+        scoped_user_ids = [int(current_user.id)]
+
+    if not scoped_user_ids:
+        return []
+
+    recent_scan_limit = max(TASK_RECENT_SCAN_WINDOW, safe_limit * 20)
+    recent_ids = (
+        select(Task.id.label("id"))
+        .order_by(Task.id.desc())
+        .limit(recent_scan_limit)
+        .subquery("recent_task_ids")
+    )
+
+    query = (
+        select(Task)
+        .options(joinedload(Task.assignee))
+        .join(recent_ids, Task.id == recent_ids.c.id)
+        .where(Task.assignee_id.in_(scoped_user_ids))
+        .order_by(Task.id.desc())
+        .limit(safe_limit)
+    )
+
+    try:
+        result = await db.execute(query)
+    except DBAPIError:
+        return []
     tasks = result.scalars().all()
-    
+
     if not tasks:
         return []
 
-    # Map to schemas manually since we used joinedload
     output = []
     for t in tasks:
         deadline = None
         if t.created_at and getattr(t, "deadline_days", None):
             deadline = t.created_at + timedelta(days=t.deadline_days)
-            
-        output.append({
-            "id": t.id,
-            "task_id": t.task_id,
-            "title": t.title,
-            "description": t.description,
-            "assignee_id": t.assignee_id,
-            "assignee_name": t.assignee.name if t.assignee else None,
-            "deadline_days": t.deadline_days,
-            "deadline": deadline,
-            "effort": t.effort,
-            "impact": t.impact,
-            "workload": getattr(t, "workload", 5),
-            "status": t.status,
-            "priority_score": t.priority_score,
-            "priority_label": t.priority_label,
-            "complaint_boost": t.complaint_boost,
-            "ai_reasoning": t.ai_reasoning,
-            "created_at": t.created_at,
-            "updated_at": t.updated_at
-        })
+
+        output.append(
+            {
+                "id": t.id,
+                "task_id": t.task_id,
+                "title": t.title,
+                "description": t.description,
+                "assignee_id": t.assignee_id,
+                "assignee_name": t.assignee.name if t.assignee else None,
+                "deadline_days": t.deadline_days,
+                "deadline": deadline,
+                "effort": t.effort,
+                "impact": t.impact,
+                "workload": getattr(t, "workload", 5),
+                "status": t.status,
+                "priority_score": t.priority_score,
+                "priority_label": t.priority_label,
+                "complaint_boost": t.complaint_boost,
+                "manual_priority_boost": float(t.manual_priority_boost or 0.0),
+                "is_pinned": bool(t.is_pinned),
+                "ai_reasoning": t.ai_reasoning,
+                "created_at": t.created_at,
+                "updated_at": t.updated_at,
+            }
+        )
     return output
 
 
-# ENDPOINT 3: PATCH /tasks/{id} — Update fields + re-trigger AI scoring
+# ENDPOINT 3: PATCH /tasks/{id} - Update fields + always re-trigger AI scoring
 @router.patch("/{task_id}", response_model=TaskResponse)
-async def update_task(task_id: int, payload: TaskUpdate, db: AsyncSession = Depends(get_db)):
+async def update_task(
+    task_id: int,
+    payload: TaskUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_password_reset_completed(current_user)
+
     res = await db.execute(select(Task).filter(Task.id == task_id))
     task = res.scalars().first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    update_data = payload.model_dump(exclude_unset=True) if hasattr(payload, 'model_dump') else payload.dict(exclude_unset=True)
+    admin_user = is_admin_user(current_user)
+    if not admin_user and task.assignee_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only update your own tasks")
+
+    update_data = payload.model_dump(exclude_unset=True) if hasattr(payload, "model_dump") else payload.dict(exclude_unset=True)
+
+    if not admin_user:
+        allowed_employee_fields = {
+            "status",
+            "title",
+            "description",
+            "deadline_days",
+            "effort",
+            "impact",
+            "workload",
+        }
+        disallowed_fields = set(update_data.keys()) - allowed_employee_fields
+        if disallowed_fields:
+            raise HTTPException(
+                status_code=403,
+                detail="You cannot edit assignment or admin override fields",
+            )
 
     if "status" in update_data and update_data["status"] is not None:
         update_data["status"] = normalize_task_status(update_data["status"], default=task.status or "todo")
 
+    if "manual_priority_boost" in update_data and update_data["manual_priority_boost"] is not None:
+        update_data["manual_priority_boost"] = max(0.0, min(30.0, float(update_data["manual_priority_boost"])))
+
     for field, value in update_data.items():
         setattr(task, field, value)
 
-    scoring_fields = {"deadline_days", "effort", "impact", "workload", "status"}
-    if scoring_fields.intersection(update_data.keys()):
-        ai_result = await compute_priority_score({
-            "id": task.id,
-            "title": task.title,
-            "deadline_days": task.deadline_days,
-            "effort": task.effort,
-            "impact": task.impact,
-            "workload": task.workload,
-            "complaint_boost": task.complaint_boost,
-            "status": task.status,
-        })
-        score = ai_result.get("score", 50.0)
-        reasoning = ai_result.get("reasoning", "Score unavailable")
-        task.priority_score = score
-        task.priority_label = get_priority_label(score)
-        task.ai_reasoning = reasoning
+    # Always rescore - real-time dynamic prioritization.
+    ai_result = await _compute_task_priority(task, db)
+    score = float(ai_result.get("score", task.priority_score or 50.0))
+    reasoning = ai_result.get("reasoning", task.ai_reasoning or "Score unavailable")
+    task.priority_score = score
+    task.priority_label = _label_for_score(score)
+    task.ai_reasoning = reasoning
+    invalidate_cache(str(task.id))
 
     task.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     await db.commit()
@@ -197,9 +322,55 @@ async def update_task(task_id: int, payload: TaskUpdate, db: AsyncSession = Depe
     return await enrich_task(task, db)
 
 
+# ENDPOINT 3.1: POST /tasks/{id}/override - Admin manual priority override
+@router.post("/{task_id}/override", response_model=TaskResponse)
+async def override_task_priority(
+    task_id: int,
+    payload: TaskPriorityOverride,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_password_reset_completed(current_user)
+    _assert_admin(current_user)
+
+    res = await db.execute(select(Task).where(Task.id == task_id))
+    task = res.scalars().first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    task.manual_priority_boost = float(payload.manual_priority_boost or 0.0)
+    task.is_pinned = bool(payload.is_pinned)
+
+    if payload.override_reason:
+        reason = str(payload.override_reason).strip()
+        if reason:
+            existing = task.ai_reasoning or "Score unavailable"
+            task.ai_reasoning = f"Admin override: {reason} | {existing}"
+
+    ai_result = await _compute_task_priority(task, db)
+    score = float(ai_result.get("score", task.priority_score or 50.0))
+    reasoning = ai_result.get("reasoning", task.ai_reasoning or "Score unavailable")
+    task.priority_score = score
+    task.priority_label = _label_for_score(score)
+    task.ai_reasoning = reasoning
+    task.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    invalidate_cache(str(task.id))
+
+    await db.commit()
+    await db.refresh(task)
+    return await enrich_task(task, db)
+
+
 # ENDPOINT 4: DELETE /tasks/{id}
 @router.delete("/{task_id}", status_code=204)
-async def delete_task(task_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_task(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_password_reset_completed(current_user)
+    _assert_admin(current_user)
+
     res = await db.execute(select(Task).filter(Task.id == task_id))
     task = res.scalars().first()
     if not task:
@@ -209,9 +380,17 @@ async def delete_task(task_id: int, db: AsyncSession = Depends(get_db)):
     return None
 
 
-# ENDPOINT 5: GET /tasks/my/{user_id} — Personal filtered view
+# ENDPOINT 5: GET /tasks/my/{user_id} - Personal filtered view
 @router.get("/my/{user_id}", response_model=List[TaskResponse])
-async def get_my_tasks(user_id: int, db: AsyncSession = Depends(get_db)):
+async def get_my_tasks(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_password_reset_completed(current_user)
+    if not is_admin_user(current_user) and user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only access your own task list")
+
     query = select(Task).filter(Task.assignee_id == user_id).order_by(Task.priority_score.desc())
     result = await db.execute(query)
     tasks = result.scalars().all()
@@ -220,54 +399,63 @@ async def get_my_tasks(user_id: int, db: AsyncSession = Depends(get_db)):
     return await asyncio.gather(*(enrich_task(t, db) for t in tasks))
 
 
-# BONUS: GET /tasks/score/{id} — Utility endpoint for P2/P3 testing
+# BONUS: GET /tasks/score/{id} - Utility endpoint for P2/P3 testing
 @router.get("/score/{task_id}")
-async def get_task_score(task_id: int, db: AsyncSession = Depends(get_db)):
+async def get_task_score(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_password_reset_completed(current_user)
+
     res = await db.execute(select(Task).filter(Task.id == task_id))
     task = res.scalars().first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    ai_result = await compute_priority_score({
-        "id": task.id,
-        "title": task.title,
-        "deadline_days": task.deadline_days,
-        "effort": task.effort,
-        "impact": task.impact,
-        "workload": task.workload,
-        "complaint_boost": task.complaint_boost,
-        "status": task.status,
-    })
+    if not is_admin_user(current_user) and task.assignee_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only score your own tasks")
+
+    ai_result = await _compute_task_priority(task, db)
     score = ai_result.get("score", 50.0)
     reasoning = ai_result.get("reasoning", "Score unavailable")
     return {
         "task_id": task_id,
         "current_score": task.priority_score,
         "recomputed_score": score,
-        "reasoning": reasoning
+        "reasoning": reasoning,
     }
 
-# PHASE 3: GET /tasks/sequence/{user_id} — AI execution order
+
+# PHASE 3: GET /tasks/sequence/{user_id} - AI execution order
 @router.get("/sequence/{user_id}", response_model=List[TaskSequenceItem])
-async def get_task_sequence(user_id: int, db: AsyncSession = Depends(get_db)):
-    # Fetch all non-done tasks for this user
+async def get_task_sequence(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_password_reset_completed(current_user)
+    if not is_admin_user(current_user) and user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only access your own task sequence")
+
     query = select(Task).filter(Task.assignee_id == user_id, Task.status != "done")
     result = await db.execute(query)
     tasks = result.scalars().all()
-    
+
     if not tasks:
         return []
-        
-    # Convert tasks to simple dicts for AI
+
     task_dicts = []
     for t in tasks:
-        task_dicts.append({
-            "id": t.id,
-            "title": t.title,
-            "priority_score": t.priority_score,
-            "deadline": str(t.created_at + timedelta(days=t.deadline_days)) if t.created_at else None,
-            "effort": t.effort,
-            "impact": t.impact,
-            "status": t.status
-        })
-        
+        task_dicts.append(
+            {
+                "id": t.id,
+                "title": t.title,
+                "priority_score": t.priority_score,
+                "deadline": str(t.created_at + timedelta(days=t.deadline_days)) if t.created_at else None,
+                "effort": t.effort,
+                "impact": t.impact,
+                "status": t.status,
+            }
+        )
+
     return await suggest_execution_order(task_dicts)

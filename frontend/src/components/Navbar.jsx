@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { alertsApi } from '../api/taskApi';
+import { clearAuthStorage, getAuthSnapshot } from '../utils/auth';
 
 export default function Navbar() {
   const location = useLocation();
@@ -47,15 +48,7 @@ export default function Navbar() {
   };
 
   const getUserEmail = () => {
-    try {
-      const token = localStorage.getItem('access_token');
-      if (!token) return 'Guest';
-      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(atob(base64));
-      return payload.sub || 'User';
-    } catch {
-      return 'User';
-    }
+    return getAuthSnapshot().email || 'User';
   };
 
   useEffect(() => {
@@ -97,14 +90,21 @@ export default function Navbar() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
+    clearAuthStorage();
     navigate('/login');
   };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-100 z-50 md:sticky md:top-0 md:border-b md:border-t-0 py-2">
       <div className="max-w-4xl mx-auto flex items-center justify-around md:justify-start md:gap-8 px-6">
-        <div className="hidden md:block font-black text-indigo-600 text-xl tracking-tighter mr-4">RL</div>
+        <Link to="/" className="hidden md:flex items-center gap-2 mr-4">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-900 text-white">
+            <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>
+              dataset
+            </span>
+          </div>
+          <span className="font-black text-slate-800 text-lg tracking-tight">Roz-Lakshya</span>
+        </Link>
         {navItems.map((item) => (
           <Link 
             key={item.path} 

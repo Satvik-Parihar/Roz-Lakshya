@@ -14,3 +14,5 @@ httpx==0.27.2
 groq
 scikit-learn
 joblib
+psycopg2-binary
+tabulate

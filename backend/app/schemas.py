@@ -11,13 +11,18 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    user_id: int
+    role: str
+    is_admin: bool = False
+    must_reset_password: bool = False
 
 
 class SignupRequest(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
-    email: str = Field(..., min_length=5, max_length=255)
+    company_name: str = Field(..., min_length=2, max_length=255)
+    company_domain: Optional[str] = Field(default=None, max_length=255)
+    admin_name: str = Field(..., min_length=1, max_length=100)
+    admin_email: str = Field(..., min_length=5, max_length=255)
     password: str = Field(..., min_length=8, max_length=128)
-    role: str = Field(default="team_member")
 
 
 class SignupResponse(BaseModel):
@@ -27,6 +32,33 @@ class SignupResponse(BaseModel):
     name: str
     email: str
     role: str
+    company_name: Optional[str] = None
+    is_admin: bool = True
+
+
+class EmployeeCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    email: str = Field(..., min_length=5, max_length=255)
+    role: str = Field(default="team_member")
+
+
+class EmployeeCreateResponse(BaseModel):
+    user_id: int
+    name: str
+    email: str
+    role: str
+    temp_password: str
+    must_reset_password: bool = True
+
+
+class PasswordResetRequest(BaseModel):
+    old_password: str = Field(..., min_length=8, max_length=128)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+
+class PasswordResetResponse(BaseModel):
+    success: bool
+    message: str
 
 
 class UserListItem(BaseModel):
@@ -34,6 +66,9 @@ class UserListItem(BaseModel):
     name: str
     email: Optional[str] = None
     role: str
+    is_admin: bool = False
+    company_name: Optional[str] = None
+    must_reset_password: bool = False
 
 class TaskCreate(BaseModel):
     title: str
@@ -53,6 +88,14 @@ class TaskUpdate(BaseModel):
     impact: Optional[int] = None
     workload: Optional[int] = None
     status: Optional[str] = None  # todo | in-progress | done
+    manual_priority_boost: Optional[float] = Field(default=None, ge=0.0, le=30.0)
+    is_pinned: Optional[bool] = None
+
+
+class TaskPriorityOverride(BaseModel):
+    manual_priority_boost: float = Field(0.0, ge=0.0, le=30.0)
+    is_pinned: bool = False
+    override_reason: Optional[str] = None
 
 class TaskResponse(BaseModel):
     id: int
@@ -70,6 +113,8 @@ class TaskResponse(BaseModel):
     priority_score: float
     priority_label: Optional[str]
     complaint_boost: float
+    manual_priority_boost: float = 0.0
+    is_pinned: bool = False
     ai_reasoning: Optional[str]
     created_at: datetime
     updated_at: datetime
@@ -85,6 +130,7 @@ class TaskSequenceItem(BaseModel):
 class ComplaintCreate(BaseModel):
     text: str
     channel: str # email | call | direct
+    linked_task_id: Optional[int] = None
 
 class ComplaintUpdate(BaseModel):
     status: str # open | in-progress | resolved
@@ -98,6 +144,8 @@ class ComplaintResponse(BaseModel):
     urgency_score: float
     resolution_steps: Optional[list]
     linked_task_id: Optional[int]
+    linked_task_number: Optional[int] = None
+    linked_member_name: Optional[str] = None
     sla_hours: Optional[int]
     status: str
     created_at: datetime

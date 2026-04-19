@@ -33,7 +33,7 @@ export default function LandingPage() {
           <div className="mx-auto flex w-full max-w-6xl flex-col items-center text-center">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[color:var(--outline-variant)]/60 bg-[color:var(--surface-container-low)] px-3 py-1">
               <span className="h-2 w-2 rounded-full bg-[color:var(--primary-container)]" />
-              <span className="font-mono text-xs uppercase tracking-widest text-[color:var(--primary)]">AI-Powered Task Prioritization</span>
+              <span className="font-mono text-xs uppercase tracking-widest text-[color:var(--primary)]">Smart Work Prioritization</span>
             </div>
 
             <h1 className="max-w-4xl font-headline text-5xl font-bold tracking-tight text-[color:var(--on-surface)] md:text-7xl">

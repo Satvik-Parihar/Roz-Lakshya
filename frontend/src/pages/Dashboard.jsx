@@ -13,10 +13,11 @@ import {
   YAxis,
 } from 'recharts';
 
-import { dashboardApi } from '../api/taskApi';
+import { alertsApi, dashboardApi, usersApi } from '../api/taskApi';
 import PriorityFooter from '../components/PriorityFooter';
 import PriorityHeader from '../components/PriorityHeader';
 import useTaskStore from '../store/useTaskStore';
+import { getAuthSnapshot } from '../utils/auth';
 
 const EMPTY_SUMMARY = {
   total_tasks: 0,
@@ -27,6 +28,12 @@ const EMPTY_SUMMARY = {
   open_complaints: 0,
   total_employees: 0,
   on_hold: 0,
+};
+
+const EMPTY_NOTES = {
+  high_risk_window: 'Operational notes are loading from live metrics.',
+  team_throughput: 'Throughput insight will appear after data fetch completes.',
+  source: 'pending',
 };
 
 const kpiConfig = [
@@ -90,15 +97,38 @@ function getStatusPillClass(status) {
 }
 
 export default function Dashboard() {
-  const tasks = useTaskStore((state) => state.tasks);
+  const { tasks, fetchTasks } = useTaskStore();
+  const auth = useMemo(() => getAuthSnapshot(), []);
+  const isAdmin = Boolean(auth.isAdmin);
   const [summary, setSummary] = useState(null);
-  const [workloadMode, setWorkloadMode] = useState('department');
+  const [workloadMode, setWorkloadMode] = useState(() => (isAdmin ? 'department' : 'user'));
   const [workload, setWorkload] = useState([]);
   const [departmentWorkload, setDepartmentWorkload] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [bottlenecks, setBottlenecks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [triggeringAlerts, setTriggeringAlerts] = useState(false);
+  const [employeeForm, setEmployeeForm] = useState({ name: '', email: '', role: 'team_member' });
+  const [employeeLoading, setEmployeeLoading] = useState(false);
+  const [employeeCreated, setEmployeeCreated] = useState(null);
+  const [employeeError, setEmployeeError] = useState('');
+  const [operationalNotes, setOperationalNotes] = useState(EMPTY_NOTES);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
+
+  const loadAdminUsers = useCallback(async () => {
+    if (!isAdmin) return;
+    setAdminUsersLoading(true);
+    try {
+      const response = await usersApi.getAdmins(200);
+      setAdminUsers(Array.isArray(response?.data) ? response.data : []);
+    } catch {
+      setAdminUsers([]);
+    } finally {
+      setAdminUsersLoading(false);
+    }
+  }, [isAdmin]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -111,23 +141,61 @@ export default function Dashboard() {
         dashboardApi.getWorkload(workloadMode),
         dashboardApi.getBottlenecks(),
         dashboardApi.getDepartments(),
+        dashboardApi.getOperationalNotes(),
       ];
 
       if (needsExtraDepartmentCall) {
         requests.push(dashboardApi.getWorkload('department'));
       }
 
-      const [s, w, b, d, deptW] = await Promise.all(requests);
+      const settled = await Promise.allSettled(requests);
+      const [summaryRes, workloadRes, bottlenecksRes, departmentsRes, notesRes, deptWorkloadRes] = settled;
 
-      setSummary(s.data);
-      setWorkload(Array.isArray(w.data) ? w.data : []);
-      setBottlenecks(Array.isArray(b.data) ? b.data : []);
-      setDepartments(Array.isArray(d.data) ? d.data : []);
+      if (summaryRes.status === 'fulfilled') {
+        setSummary(summaryRes.value.data || EMPTY_SUMMARY);
+      } else {
+        setSummary(EMPTY_SUMMARY);
+      }
+
+      if (workloadRes.status === 'fulfilled') {
+        setWorkload(Array.isArray(workloadRes.value.data) ? workloadRes.value.data : []);
+      } else {
+        setWorkload([]);
+      }
+
+      if (bottlenecksRes.status === 'fulfilled') {
+        setBottlenecks(Array.isArray(bottlenecksRes.value.data) ? bottlenecksRes.value.data : []);
+      } else {
+        setBottlenecks([]);
+      }
+
+      if (departmentsRes.status === 'fulfilled') {
+        setDepartments(Array.isArray(departmentsRes.value.data) ? departmentsRes.value.data : []);
+      } else {
+        setDepartments([]);
+      }
+
+      if (notesRes.status === 'fulfilled') {
+        setOperationalNotes({ ...EMPTY_NOTES, ...(notesRes.value.data || {}) });
+      } else {
+        setOperationalNotes(EMPTY_NOTES);
+      }
 
       if (workloadMode === 'department') {
-        setDepartmentWorkload(Array.isArray(w.data) ? w.data : []);
+        if (workloadRes.status === 'fulfilled') {
+          setDepartmentWorkload(Array.isArray(workloadRes.value.data) ? workloadRes.value.data : []);
+        } else {
+          setDepartmentWorkload([]);
+        }
+      } else if (deptWorkloadRes?.status === 'fulfilled') {
+        setDepartmentWorkload(Array.isArray(deptWorkloadRes.value.data) ? deptWorkloadRes.value.data : []);
       } else {
-        setDepartmentWorkload(Array.isArray(deptW?.data) ? deptW.data : []);
+        setDepartmentWorkload([]);
+      }
+
+      const failedCount = settled.filter((item) => item.status === 'rejected').length;
+      if (failedCount > 0) {
+        setError(`Some dashboard blocks failed to load (${failedCount}). Showing available live data.`);
       }
     } catch {
       setError('Failed to load dashboard data. Is the backend running?');
@@ -136,6 +204,7 @@ export default function Dashboard() {
       setDepartmentWorkload([]);
       setDepartments([]);
       setBottlenecks([]);
+      setOperationalNotes(EMPTY_NOTES);
     } finally {
       setLoading(false);
     }
@@ -143,7 +212,19 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchAll();
-  }, [fetchAll]);
+    fetchTasks();
+    const interval = window.setInterval(() => {
+      fetchAll();
+      fetchTasks();
+    }, 20000);
+    return () => window.clearInterval(interval);
+  }, [fetchAll, fetchTasks]);
+
+  useEffect(() => {
+    if (isAdmin && employeeForm.role === 'admin') {
+      loadAdminUsers();
+    }
+  }, [isAdmin, employeeForm.role, loadAdminUsers]);
 
   const localSummary = useMemo(() => {
     const totalTasks = tasks.length;
@@ -172,7 +253,7 @@ export default function Dashboard() {
     if (workloadMode === 'department') {
       return workload.map((item) => ({
         ...item,
-        label: abbreviateDepartment(item.department),
+        label: abbreviateDepartment(item.department || item.user_name || 'My Tasks'),
       }));
     }
     return workload.map((item) => ({
@@ -211,29 +292,145 @@ export default function Dashboard() {
     [departments],
   );
 
+  const handleForceAlertCheck = async () => {
+    setTriggeringAlerts(true);
+    try {
+      await alertsApi.triggerCheck();
+      window.setTimeout(() => {
+        fetchAll();
+      }, 3000);
+    } catch {
+      setError('Failed to trigger manual alert check.');
+    } finally {
+      setTriggeringAlerts(false);
+    }
+  };
+
+  const handleCreateEmployee = async (event) => {
+    event.preventDefault();
+    setEmployeeError('');
+    setEmployeeCreated(null);
+
+    if (!employeeForm.name.trim() || !employeeForm.email.trim()) {
+      setEmployeeError('Employee name and email are required.');
+      return;
+    }
+
+    setEmployeeLoading(true);
+    try {
+      const response = await usersApi.createEmployee({
+        name: employeeForm.name.trim(),
+        email: employeeForm.email.trim(),
+        role: employeeForm.role,
+      });
+      setEmployeeCreated(response.data);
+      setEmployeeForm({ name: '', email: '', role: 'team_member' });
+      await loadAdminUsers();
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setEmployeeError(typeof detail === 'string' ? detail : 'Failed to create employee.');
+    } finally {
+      setEmployeeLoading(false);
+    }
+  };
+
   return (
     <div className="brand-page-bg min-h-screen">
       <PriorityHeader appMode />
 
-      <main className="mx-auto w-full max-w-6xl px-6 py-10 space-y-8">
-        <section className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-6 shadow-sm">
+      <main className="mx-auto w-full max-w-6xl space-y-8 px-3 py-6 sm:px-6 sm:py-10">
+        <section className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-4 shadow-sm sm:p-6">
           <p className="font-mono text-xs uppercase tracking-widest text-[color:var(--primary)]">Manager View</p>
-          <h1 className="mt-1 font-headline text-3xl font-bold tracking-tight text-[color:var(--on-surface)]">Dashboard</h1>
+          <h1 className="mt-1 font-headline text-2xl font-bold tracking-tight text-[color:var(--on-surface)] sm:text-3xl">Dashboard</h1>
           <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">
             Monitor workload distribution and priority execution quality across your active queue.
           </p>
         </section>
 
-        <header className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">📊 Dashboard</h1>
-            <p className="text-sm text-slate-500 mt-1">Live team performance overview</p>
-          </div>
+        {isAdmin && (
+          <section className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-4 shadow-sm sm:p-6">
+            <h2 className="font-headline text-xl font-bold text-[color:var(--on-surface)]">Add Employee</h2>
+            <p className="mt-1 text-sm text-[color:var(--on-surface-variant)]">
+              Create employee login and generate a temporary password for first-time sign-in.
+            </p>
+
+            <form onSubmit={handleCreateEmployee} className="mt-4 grid gap-3 md:grid-cols-4">
+              <input
+                id="employee-name"
+                name="employee-name"
+                type="text"
+                placeholder="Employee name"
+                value={employeeForm.name}
+                onChange={(e) => setEmployeeForm((prev) => ({ ...prev, name: e.target.value }))}
+                className="rounded-md border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2 text-sm text-[color:var(--on-surface)] outline-none focus:ring-1 focus:ring-[color:var(--primary)]"
+              />
+              <input
+                id="employee-email"
+                name="employee-email"
+                type="email"
+                placeholder="employee@company.com"
+                value={employeeForm.email}
+                onChange={(e) => setEmployeeForm((prev) => ({ ...prev, email: e.target.value }))}
+                className="rounded-md border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2 text-sm text-[color:var(--on-surface)] outline-none focus:ring-1 focus:ring-[color:var(--primary)]"
+              />
+              <select
+                id="employee-role"
+                name="employee-role"
+                value={employeeForm.role}
+                onChange={(e) => setEmployeeForm((prev) => ({ ...prev, role: e.target.value }))}
+                className="rounded-md border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-2 text-sm text-[color:var(--on-surface)] outline-none focus:ring-1 focus:ring-[color:var(--primary)]"
+              >
+                <option value="team_member">Team Member</option>
+                <option value="admin">Admin</option>
+              </select>
+              <button
+                type="submit"
+                disabled={employeeLoading}
+                className="rounded-md bg-[color:var(--on-surface)] px-4 py-2 text-sm font-semibold text-[color:var(--surface-container-lowest)] hover:bg-[color:var(--inverse-surface)] disabled:opacity-60"
+              >
+                {employeeLoading ? 'Creating...' : 'Create Employee'}
+              </button>
+            </form>
+
+            {employeeError && <p className="mt-3 text-sm text-red-600">{employeeError}</p>}
+
+            {employeeCreated && (
+              <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                <p className="font-semibold">Employee created successfully</p>
+                <p className="mt-1">Email: {employeeCreated.email}</p>
+                <p>Temporary Password: <span className="font-bold">{employeeCreated.temp_password}</span></p>
+                <p className="mt-1 text-xs">Employee must reset password on first login.</p>
+              </div>
+            )}
+
+            {employeeForm.role === 'admin' && (
+              <div className="mt-4 rounded-md border border-[color:var(--outline-variant)]/60 bg-[color:var(--surface-container-low)] p-4">
+                <p className="text-sm font-semibold text-[color:var(--on-surface)]">Current Admin Users</p>
+                {adminUsersLoading ? (
+                  <p className="mt-2 text-xs text-[color:var(--on-surface-variant)]">Loading admins...</p>
+                ) : adminUsers.length === 0 ? (
+                  <p className="mt-2 text-xs text-[color:var(--on-surface-variant)]">No admin users found in this company scope.</p>
+                ) : (
+                  <ul className="mt-2 space-y-1 text-xs text-[color:var(--on-surface-variant)]">
+                    {adminUsers.map((u) => (
+                      <li key={u.id}>
+                        {u.name} {u.email ? `(${u.email})` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <p className="text-sm text-[color:var(--on-surface-variant)]">Live team performance overview</p>
           <button
             type="button"
             onClick={fetchAll}
             disabled={loading}
-            className="px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 text-sm font-semibold text-slate-700 disabled:opacity-60"
+            className="w-full rounded-xl border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-4 py-2 text-sm font-semibold text-[color:var(--on-surface)] shadow-sm hover:bg-[color:var(--surface-container-low)] disabled:opacity-60 sm:w-auto"
           >
             🔄 Refresh
           </button>
@@ -259,13 +456,13 @@ export default function Dashboard() {
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {kpiConfig.map((card) => (
-                <article key={card.key} className="rounded-2xl border border-slate-100 bg-white shadow-sm p-6 space-y-2">
+                <article key={card.key} className="space-y-2 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
                     <span className="mr-1">{card.icon}</span>
                     {card.label}
                   </p>
                   <p
-                    className={`text-3xl font-black ${
+                    className={`text-2xl font-black sm:text-3xl ${
                       card.key === 'overdue' && safeSummary.overdue > 0
                         ? 'text-red-600'
                         : card.key === 'high_priority_active' && safeSummary.high_priority_active > 0
@@ -279,31 +476,44 @@ export default function Dashboard() {
               ))}
             </div>
           )}
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={handleForceAlertCheck}
+              disabled={triggeringAlerts}
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-60"
+            >
+              {triggeringAlerts ? 'Triggering...' : '🔔 Force Alert Check (Demo)'}
+            </button>
+          </div>
         </section>
 
         <section className="rounded-2xl border border-slate-100 bg-white shadow-sm p-5 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xl font-bold text-slate-800">🏢 Department Workload</h2>
-            <div className="inline-flex rounded-xl border border-slate-200 p-1 bg-slate-50">
-              <button
-                type="button"
-                onClick={() => setWorkloadMode('department')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
-                  workloadMode === 'department' ? 'bg-white shadow text-slate-900' : 'text-slate-500'
-                }`}
-              >
-                By Department
-              </button>
-              <button
-                type="button"
-                onClick={() => setWorkloadMode('user')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
-                  workloadMode === 'user' ? 'bg-white shadow text-slate-900' : 'text-slate-500'
-                }`}
-              >
-                By User
-              </button>
-            </div>
+            {isAdmin && (
+              <div className="inline-flex rounded-xl border border-slate-200 p-1 bg-slate-50">
+                <button
+                  type="button"
+                  onClick={() => setWorkloadMode('department')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
+                    workloadMode === 'department' ? 'bg-white shadow text-slate-900' : 'text-slate-500'
+                  }`}
+                >
+                  By Department
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWorkloadMode('user')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
+                    workloadMode === 'user' ? 'bg-white shadow text-slate-900' : 'text-slate-500'
+                  }`}
+                >
+                  By User
+                </button>
+              </div>
+            )}
           </div>
 
           {loading ? (
@@ -410,8 +620,32 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left min-w-[760px]">
+              {/* Mobile card view */}
+              <div className="sm:hidden space-y-3">
+                {visibleBottlenecks.map((task) => (
+                  <div key={task.task_id} className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{truncateTitle(task.title || `Task #${task.task_id}`)}</p>
+                        <p className="text-xs text-slate-400">Task #{task.task_id} · {task.assignee_name || 'Unassigned'}</p>
+                      </div>
+                      <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-bold border ${getPriorityBadgeClass(task.priority_label)}`}>
+                        {task.priority_label || 'Low'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap text-xs">
+                      <span className={`px-2 py-0.5 rounded-full font-semibold ${getStatusPillClass(task.status)}`}>{formatStatus(task.status)}</span>
+                      <span className={`font-semibold ${Number(task.hours_stalled || 0) > 48 ? 'text-red-600' : 'text-amber-600'}`}>
+                        ⏱ {Number(task.hours_stalled || 0).toFixed(1)}h stalled
+                      </span>
+                      <span className="text-slate-500">📅 {Number(task.deadline_days || 0)}d deadline</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop table view */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left min-w-[640px]">
                   <thead>
                     <tr className="text-xs uppercase tracking-wide text-slate-400 border-b border-slate-100">
                       <th className="py-2">Task</th>
@@ -455,7 +689,7 @@ export default function Dashboard() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-slate-100 bg-white shadow-sm p-6 space-y-4">
+        <section className="rounded-2xl border border-slate-100 bg-white shadow-sm p-5 space-y-4">
           <h2 className="text-xl font-bold text-slate-800">📊 Department Overview</h2>
           {loading ? (
             <div className="space-y-3">
@@ -468,33 +702,53 @@ export default function Dashboard() {
               No department overview data yet
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left">
-                <thead>
-                  <tr className="text-xs uppercase tracking-wide text-slate-400 border-b border-slate-100">
-                    <th className="py-3">Department</th>
-                    <th className="py-3">Employees</th>
-                    <th className="py-3">Total Tasks</th>
-                    <th className="py-3">Open</th>
-                    <th className="py-3">Overdue</th>
-                    <th className="py-3">Complaints Handled</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {departmentTableData.map((row, index) => (
-                    <tr key={row.department} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                      <td className="py-3 px-1 text-sm font-semibold text-slate-800">{row.department}</td>
-                      <td className="py-3 px-1 text-sm text-slate-700">{Number(row.employee_count || 0).toLocaleString()}</td>
-                      <td className="py-3 px-1 text-sm text-slate-700">{Number(row.total_tasks_assigned || 0).toLocaleString()}</td>
-                      <td className="py-3 px-1 text-sm text-slate-700">{Number(row.open_tasks || 0).toLocaleString()}</td>
-                      <td className={`py-3 px-1 text-sm ${Number(row.overdue_tasks || 0) > 5 ? 'font-bold text-red-600' : 'text-slate-700'}`}>
-                        {Number(row.overdue_tasks || 0).toLocaleString()}
-                      </td>
-                      <td className="py-3 px-1 text-sm text-slate-700">{Number(row.complaints_handled || 0).toLocaleString()}</td>
+            <div>
+              {/* Mobile card view */}
+              <div className="sm:hidden space-y-3">
+                {departmentTableData.map((row) => (
+                  <div key={row.department} className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2">
+                    <p className="text-sm font-bold text-slate-800">{row.department}</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
+                      <span>👥 {Number(row.employee_count || 0)} employees</span>
+                      <span>📋 {Number(row.total_tasks_assigned || 0)} total tasks</span>
+                      <span>📂 {Number(row.open_tasks || 0)} open</span>
+                      <span className={Number(row.overdue_tasks || 0) > 5 ? 'font-bold text-red-600' : ''}>
+                        ⚠️ {Number(row.overdue_tasks || 0)} overdue
+                      </span>
+                      <span>📢 {Number(row.complaints_handled || 0)} complaints</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop table view */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full min-w-[600px] text-left">
+                  <thead>
+                    <tr className="text-xs uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                      <th className="py-3">Department</th>
+                      <th className="py-3">Employees</th>
+                      <th className="py-3">Total Tasks</th>
+                      <th className="py-3">Open</th>
+                      <th className="py-3">Overdue</th>
+                      <th className="py-3">Complaints Handled</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {departmentTableData.map((row, index) => (
+                      <tr key={row.department} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                        <td className="py-3 px-1 text-sm font-semibold text-slate-800">{row.department}</td>
+                        <td className="py-3 px-1 text-sm text-slate-700">{Number(row.employee_count || 0).toLocaleString()}</td>
+                        <td className="py-3 px-1 text-sm text-slate-700">{Number(row.total_tasks_assigned || 0).toLocaleString()}</td>
+                        <td className="py-3 px-1 text-sm text-slate-700">{Number(row.open_tasks || 0).toLocaleString()}</td>
+                        <td className={`py-3 px-1 text-sm ${Number(row.overdue_tasks || 0) > 5 ? 'font-bold text-red-600' : 'text-slate-700'}`}>
+                          {Number(row.overdue_tasks || 0).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-1 text-sm text-slate-700">{Number(row.complaints_handled || 0).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </section>
@@ -504,13 +758,14 @@ export default function Dashboard() {
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <article className="rounded-lg border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface)] p-4">
               <h3 className="font-semibold text-[color:var(--on-surface)]">High-risk window</h3>
-              <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">Next 24h has dense deadlines. Push complaint-linked tasks first.</p>
+              <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">{operationalNotes.high_risk_window}</p>
             </article>
             <article className="rounded-lg border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface)] p-4">
               <h3 className="font-semibold text-[color:var(--on-surface)]">Team throughput</h3>
-              <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">Execution pace is stable. Consider reducing mid-priority context switching.</p>
+              <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">{operationalNotes.team_throughput}</p>
             </article>
           </div>
+          <p className="mt-3 text-xs text-[color:var(--on-surface-variant)]">Source: {String(operationalNotes.source || 'unknown').toUpperCase()}</p>
         </section>
       </main>
 

@@ -1,0 +1,93 @@
+# ------------------------------
+# Global / OS
+# ------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ------------------------------
+# IDE / Editor
+# ------------------------------
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.user
+*.swp
+*.swo
+
+# ------------------------------
+# Logs
+# ------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ------------------------------
+# Environment files
+# ------------------------------
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+frontend/.env.*
+
+# ------------------------------
+# Python
+# ------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.pyre/
+.tox/
+.coverage
+coverage.xml
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+backend/.venv/
+backend/venv/
+frontend/.venv/
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ------------------------------
+# Node / Frontend
+# ------------------------------
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+*.tsbuildinfo
+
+# ------------------------------
+# Caches / Generated
+# ------------------------------
+.cache/
+.tmp/
+tmp/
+
+# ------------------------------
+# Database / Local data dumps
+# ------------------------------
+*.sqlite3
+*.db
+*.db-journal
+
+# ------------------------------
+# Notebook / misc
+# ------------------------------
+.ipynb_checkpoints/

@@ -2,11 +2,12 @@ import asyncio
 from datetime import datetime, timedelta
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from sqlalchemy import case, func
 from sqlalchemy import select
 
 from app.database import AsyncSessionLocal
 from app.models import Alert, Complaint, Task
-from app.services.ai_engine import compute_priority_score
+from app.services.ai_engine import compute_priority_score, invalidate_cache
 
 scheduler = AsyncIOScheduler()
 
@@ -17,6 +18,23 @@ def _label_for_score(score: float) -> str:
     if score >= 40:
         return "Medium"
     return "Low"
+
+
+async def get_user_completion_rate_sync(user_id: int | None, db) -> float:
+    if not user_id:
+        return 0.5
+    result = await db.execute(
+        select(
+            func.count(Task.id).label("total"),
+            func.sum(case((Task.status == "done", 1), else_=0)).label("done"),
+        ).where(Task.assignee_id == user_id)
+    )
+    row = result.first()
+    total = int(getattr(row, "total", 0) or 0)
+    done = int(getattr(row, "done", 0) or 0)
+    if total == 0:
+        return 0.5
+    return round(done / total, 3)
 
 async def rescore_all_tasks():
     """
@@ -30,9 +48,15 @@ async def rescore_all_tasks():
         tasks = res.scalars().all()
         total = len(tasks)
         print(f"[Scheduler] Re-scoring {total} active tasks")
+
+        user_rates: dict[int, float] = {}
+        for task in tasks:
+            if task.assignee_id and task.assignee_id not in user_rates:
+                user_rates[task.assignee_id] = await get_user_completion_rate_sync(task.assignee_id, db)
         
         for index, task in enumerate(tasks, start=1):
             try:
+                invalidate_cache(str(task.id))
                 task_data = {
                     "id": task.id,
                     "title": task.title,
@@ -40,8 +64,11 @@ async def rescore_all_tasks():
                     "effort": task.effort,
                     "impact": task.impact,
                     "workload": task.workload,
-                    "complaint_boost": task.complaint_boost,
+                    "complaint_boost": task.complaint_boost or 0.0,
                     "status": task.status,
+                    "manual_priority_boost": task.manual_priority_boost or 0.0,
+                    "is_pinned": bool(task.is_pinned),
+                    "user_completion_rate": user_rates.get(task.assignee_id, 0.5),
                 }
                 ai_res = await compute_priority_score(task_data)
                 task.priority_score = ai_res.get("score", task.priority_score)
@@ -116,6 +143,8 @@ async def check_task_deadlines():
                             )
                             alerts_created += 1
 
+                user_rate = await get_user_completion_rate_sync(task.assignee_id, session)
+                invalidate_cache(str(task.id))
                 ai_result = await compute_priority_score(
                     {
                         "id": task.id,
@@ -124,8 +153,11 @@ async def check_task_deadlines():
                         "effort": task.effort,
                         "impact": task.impact,
                         "workload": task.workload,
-                        "complaint_boost": task.complaint_boost,
+                        "complaint_boost": task.complaint_boost or 0.0,
                         "status": task.status,
+                        "manual_priority_boost": task.manual_priority_boost or 0.0,
+                        "is_pinned": bool(task.is_pinned),
+                        "user_completion_rate": user_rate,
                     }
                 )
 
