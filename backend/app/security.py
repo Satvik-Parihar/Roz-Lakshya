@@ -113,7 +113,8 @@ def generate_temp_password(length: int = 12) -> str:
 
 
 def is_admin_user(user: User) -> bool:
-    return bool(getattr(user, "is_admin", False) or str(user.role or "").lower() == "admin")
+    role = str(getattr(user, "role", "") or "").lower()
+    return bool(getattr(user, "is_admin", False)) or role in ("admin", "manager")
 
 
 def ensure_password_reset_completed(user: User) -> None:

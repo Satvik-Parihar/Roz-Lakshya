@@ -335,10 +335,10 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="brand-page-bg min-h-screen">
+    <div className=" min-h-screen flex flex-col">
       <PriorityHeader appMode />
 
-      <main className="mx-auto w-full max-w-6xl space-y-8 px-3 py-6 sm:px-6 sm:py-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 space-y-8 px-3 py-6 sm:px-6 sm:py-10">
         <section className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-4 shadow-sm sm:p-6">
           <p className="font-mono text-xs uppercase tracking-widest text-[color:var(--primary)]">Manager View</p>
           <h1 className="mt-1 font-headline text-2xl font-bold tracking-tight text-[color:var(--on-surface)] sm:text-3xl">Dashboard</h1>
@@ -756,11 +756,11 @@ export default function Dashboard() {
         <section className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-6 shadow-sm">
           <h2 className="font-headline text-xl font-bold text-[color:var(--on-surface)]">Operational Notes</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <article className="rounded-lg border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface)] p-4">
+            <article className="rounded-lg border border-[color:var(--outline-variant)]/50 bg-transparent p-4">
               <h3 className="font-semibold text-[color:var(--on-surface)]">High-risk window</h3>
               <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">{operationalNotes.high_risk_window}</p>
             </article>
-            <article className="rounded-lg border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface)] p-4">
+            <article className="rounded-lg border border-[color:var(--outline-variant)]/50 bg-transparent p-4">
               <h3 className="font-semibold text-[color:var(--on-surface)]">Team throughput</h3>
               <p className="mt-2 text-sm text-[color:var(--on-surface-variant)]">{operationalNotes.team_throughput}</p>
             </article>

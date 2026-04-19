@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { createTask } from '../api/tasks';
 import { useTaskStore } from '../store/taskStore';
+import api from '../api/axios';
 
 // Fallback useToast in case shadcn/ui is not fully initialized by other team members
 const useToastFallback = () => ({
@@ -12,15 +13,29 @@ export default function CreateTaskModal({ isOpen, onClose }) {
   const addTask = useTaskStore((state) => state.addTask);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [assignees, setAssignees] = useState([]);
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    assignee: 'Alice',
+    assignee_id: '',
     deadline: '',
     effort: 3,
     impact: 3,
   });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const fetchAssignees = async () => {
+      try {
+        const { data } = await api.get('/users');
+        setAssignees(data);
+      } catch (err) {
+        console.error("Failed to load assignees", err);
+      }
+    };
+    fetchAssignees();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -29,12 +44,15 @@ export default function CreateTaskModal({ isOpen, onClose }) {
     setLoading(true);
     setError(null);
     try {
-      const result = await createTask(formData);
+      const payload = {
+          ...formData,
+          assignee_id: formData.assignee_id ? Number(formData.assignee_id) : null,
+      };
+      const result = await createTask(payload);
       addTask(result);
       
       // Attempt to show toast
       try {
-        // This is a placeholder for real shadcn toast logic
         const { toast } = useToastFallback();
         toast({ title: 'Task Created', description: 'The task has been successfully created.' });
       } catch(tErr) {
@@ -42,7 +60,7 @@ export default function CreateTaskModal({ isOpen, onClose }) {
       }
 
       setFormData({
-        title: '', description: '', assignee: 'Alice', deadline: '', effort: 3, impact: 3
+        title: '', description: '', assignee_id: '', deadline: '', effort: 3, impact: 3
       });
       onClose();
     } catch (err) {
@@ -98,13 +116,15 @@ export default function CreateTaskModal({ isOpen, onClose }) {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Assignee</label>
               <select 
-                name="assignee" value={formData.assignee} onChange={handleChange}
+                name="assignee_id" value={formData.assignee_id} onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
               >
-                <option value="Alice">Alice</option>
-                <option value="Bob">Bob</option>
-                <option value="Charlie">Charlie</option>
-                <option value="Diana">Diana</option>
+                <option value="">Unassigned</option>
+                {assignees.map(u => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} {u.email ? `(${u.email.split('@')[0]})` : ''}
+                  </option>
+                ))}
               </select>
             </div>
             <div>

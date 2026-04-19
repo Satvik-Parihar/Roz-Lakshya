@@ -36,6 +36,10 @@
     margin: 0;
     overflow-x: hidden;
     background: var(--background);
+    background-image: radial-gradient(circle at 10% -5%, rgba(125, 211, 252, 0.2), transparent 35%),
+      radial-gradient(circle at 85% 0%, rgba(190, 242, 100, 0.18), transparent 30%),
+      linear-gradient(180deg, rgba(251, 248, 255, 1) 0%, rgba(244, 242, 253, 0.8) 100%);
+    background-attachment: fixed;
     color: var(--on-background);
     font-family: 'Inter', sans-serif;
   }
@@ -75,6 +79,7 @@
     background-image: radial-gradient(circle at 10% -5%, rgba(125, 211, 252, 0.2), transparent 35%),
       radial-gradient(circle at 85% 0%, rgba(190, 242, 100, 0.18), transparent 30%),
       linear-gradient(180deg, rgba(251, 248, 255, 1) 0%, rgba(244, 242, 253, 0.8) 100%);
+    background-attachment: fixed;
   }
 
   .stagger-enter {

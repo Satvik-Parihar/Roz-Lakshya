@@ -35,7 +35,8 @@ api.interceptors.response.use(
     ) {
       originalConfig._retriedOnFallback = true;
       originalConfig.baseURL = FALLBACK_API_BASE_URL;
-      api.defaults.baseURL = FALLBACK_API_BASE_URL;
+      // NOTE: Do NOT mutate api.defaults.baseURL here — that would permanently
+      // redirect all future requests to the fallback port after a single failure.
       return api(originalConfig);
     }
 

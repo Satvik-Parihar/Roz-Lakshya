@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[color:var(--surface)]">
+    <div className="relative min-h-screen bg-transparent">
       <PriorityHeader />
 
       <main className="relative z-10 flex min-h-[calc(100vh-80px)] items-center justify-center px-4 py-10">

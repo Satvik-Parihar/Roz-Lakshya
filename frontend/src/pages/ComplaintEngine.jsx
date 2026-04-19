@@ -123,10 +123,10 @@ export default function ComplaintEngine() {
   };
 
   return (
-    <div className="brand-page-bg min-h-screen">
+    <div className=" min-h-screen flex flex-col">
       <PriorityHeader appMode />
 
-      <main className="mx-auto w-full max-w-4xl space-y-8 px-3 py-6 sm:px-6 sm:py-10">
+      <main className="mx-auto w-full max-w-4xl flex-1 space-y-8 px-3 py-6 sm:px-6 sm:py-10">
         <section className="stagger-enter rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-4 shadow-sm sm:p-6">
           <p className="font-mono text-xs uppercase tracking-widest text-[color:var(--primary)]">Complaint Engine</p>
           <h1 className="mt-1 text-2xl font-headline font-bold tracking-tight text-[color:var(--on-surface)] sm:text-3xl">

@@ -66,7 +66,7 @@ export default function TaskExpandView({ task }) {
       {/* Scores */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Priority Score', value: task.priority_score ?? '—' },
+          { label: 'Priority Score', value: typeof task.priority_score === 'number' ? task.priority_score.toFixed(2) : (task.priority_score ?? '—') },
           { label: 'Effort',         value: task.effort         ?? '—' },
           { label: 'Impact',         value: task.impact         ?? '—' },
         ].map(({ label, value }) => (

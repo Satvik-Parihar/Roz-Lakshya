@@ -1,12 +1,16 @@
+import { useMemo } from 'react';
 import PriorityFooter from '../components/PriorityFooter';
 import PriorityHeader from '../components/PriorityHeader';
+import { getAuthSnapshot } from '../utils/auth';
 
 export default function TermsPage() {
-  return (
-    <div className="min-h-screen bg-[color:var(--background)] text-[color:var(--on-background)]">
-      <PriorityHeader />
+  const auth = useMemo(() => getAuthSnapshot(), []);
 
-      <main className="px-6 py-16">
+  return (
+    <div className="min-h-screen flex flex-col bg-transparent text-[color:var(--on-background)]">
+      <PriorityHeader appMode={auth.isAuthenticated} />
+
+      <main className="flex-1 px-6 py-16">
         <div className="mx-auto w-full max-w-4xl">
           <p className="font-mono text-xs uppercase tracking-[0.22em] text-[color:var(--primary)]">Legal</p>
           <h1 className="mt-3 font-headline text-4xl font-bold tracking-tight text-[color:var(--on-surface)]">Terms of Service</h1>

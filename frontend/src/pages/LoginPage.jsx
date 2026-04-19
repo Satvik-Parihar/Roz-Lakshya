@@ -52,7 +52,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[color:var(--surface)]">
+    <div className="relative min-h-screen bg-transparent">
       <PriorityHeader />
 
       <div className="pointer-events-none absolute right-8 top-20 h-52 w-52 rounded-full bg-sky-200/30 blur-3xl" />

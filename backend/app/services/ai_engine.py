@@ -13,10 +13,12 @@ except Exception:
 _MODEL_PATH = os.path.join(os.path.dirname(__file__), "priority_model.pkl")
 _model = None
 
-# Model was trained on raw CSV target values with observed range near this interval.
-# We normalize predictions to 0-100 so UI and labels align with High/Medium/Low thresholds.
-_MODEL_SCORE_MIN = -2.265517241
-_MODEL_SCORE_MAX = 34.3
+# Model was trained on raw CSV target values.
+# Widened bounds to spread normalized scores across the full 0-100 range.
+# Raw outputs observed: roughly [-2.5, 34.3]. We set min=-5, max=40 to
+# give the full score range room to breathe, producing a realistic distribution.
+_MODEL_SCORE_MIN = -5.0
+_MODEL_SCORE_MAX = 40.0
 
 
 def _get_model():

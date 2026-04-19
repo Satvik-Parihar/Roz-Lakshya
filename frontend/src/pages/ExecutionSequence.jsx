@@ -1,49 +1,76 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { taskApi } from '../api/taskApi';
-import useTaskStore from '../store/useTaskStore';
 import { getAuthSnapshot } from '../utils/auth';
 import PriorityHeader from '../components/PriorityHeader';
 import PriorityFooter from '../components/PriorityFooter';
 
 export default function ExecutionSequence() {
-  const { tasks, fetchTasks } = useTaskStore();
+  const [tasks, setTasks] = useState([]);
   const [sequence, setSequence] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const USER_ID = Number(getAuthSnapshot().userId || 0);
+  const auth = useMemo(() => getAuthSnapshot(), []);
+  const USER_ID = Number(auth.userId || 0);
+  const IS_ADMIN = Boolean(auth.isAdmin);
 
-  useEffect(() => {
-    loadSequence();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const loadSequence = async () => {
+  const loadSequence = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
       if (!USER_ID) {
+        setTasks([]);
         setSequence([]);
         setError('Unable to resolve current user for sequence generation.');
         return;
       }
-      await fetchTasks();
-      const res = await taskApi.getSequence(USER_ID);
-      setSequence(Array.isArray(res.data) ? res.data : []);
+
+      const taskRequest = IS_ADMIN
+        ? taskApi.getAll(200)
+        : taskApi.getMine(USER_ID, 200);
+
+      const [taskRes, seqRes] = await Promise.all([
+        taskRequest,
+        taskApi.getSequence(USER_ID, 200),
+      ]);
+
+      const taskRows = Array.isArray(taskRes?.data) ? taskRes.data : [];
+      setTasks(taskRows);
+
+      const rawSequence = Array.isArray(seqRes?.data) ? seqRes.data : [];
+      if (rawSequence.length > 0) {
+        setSequence(rawSequence);
+      } else {
+        const fallback = taskRows
+          .filter((t) => String(t.status || 'todo') !== 'done')
+          .sort((a, b) => Number(b.priority_score || 0) - Number(a.priority_score || 0))
+          .slice(0, 25)
+          .map((t, index) => ({
+            task_id: t.id,
+            sequence: index + 1,
+            reason: 'Fallback sequence based on current AI priority score.',
+          }));
+        setSequence(fallback);
+      }
     } catch {
+      setTasks([]);
       setError('AI could not compute sequence at this time.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [IS_ADMIN, USER_ID]);
+
+  useEffect(() => {
+    loadSequence();
+  }, [loadSequence]);
 
   const getTaskDetails = (id) => tasks.find((t) => t.id === id);
 
   return (
-    <div className="brand-page-bg min-h-screen">
+    <div className="flex min-h-screen flex-col ">
       <PriorityHeader appMode />
 
-      <main className="mx-auto w-full max-w-3xl space-y-6 px-3 py-6 sm:px-6 sm:py-10">
+      <main className="flex-grow mx-auto w-full max-w-3xl space-y-6 px-3 py-6 sm:px-6 sm:py-10">
         {/* ── Page header ── */}
         <section className="stagger-enter rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-4 shadow-sm sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -141,7 +168,7 @@ export default function ExecutionSequence() {
 
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[color:var(--on-surface-variant)] font-semibold uppercase tracking-wider">
                       <span>⌛ Effort: {task.effort ?? 'N/A'}</span>
-                      <span>🔥 Score: {score.toFixed(0)}</span>
+                      <span>🔥 Score: {score.toFixed(2)}</span>
                       {task.deadline_days && (
                         <span>📅 {task.deadline_days}d deadline</span>
                       )}

@@ -107,6 +107,10 @@ export const taskApi = {
     const res = await api.get(`/tasks/?limit=${limit}`);
     return { ...res, data: res.data.map(mapTask) };
   },
+  getMine: async (userId, limit = 200) => {
+    const res = await api.get(`/tasks/my/${userId}?limit=${limit}`);
+    return { ...res, data: res.data.map(mapTask) };
+  },
   create: async (data) => {
     const res = await api.post('/tasks/', buildCreatePayload(data));
     return { ...res, data: mapTask(res.data) };
@@ -118,14 +122,14 @@ export const taskApi = {
   remove: (id) => api.delete(`/tasks/${id}`),
   
   // Phase 3: AI Sequencing
-  getSequence: async (userId) => {
-    const res = await api.get(`/tasks/sequence/${userId}`);
+  getSequence: async (userId, limit = 200) => {
+    const res = await api.get(`/tasks/sequence/${userId}?limit=${limit}`);
     return res;
   }
 };
 
 export const usersApi = {
-  getAll: (limit = 500) => api.get(`/users/?limit=${limit}`),
+  getAll: (limit = 2000) => api.get(`/users/?limit=${limit}`),
   getAdmins: (limit = 200) => api.get(`/users/admins?limit=${limit}`),
   getMe: () => api.get('/users/me'),
   createEmployee: (data) => api.post('/users/employees', data),

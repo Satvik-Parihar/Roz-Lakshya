@@ -82,8 +82,9 @@ export function getAuthSnapshot() {
     token,
     payload,
     isAuthenticated: Boolean(token && payload),
-    isAdmin: Boolean(payload?.is_admin) || String(payload?.role || '').toLowerCase() === 'admin',
+    isAdmin: Boolean(payload?.is_admin) || ['admin', 'manager'].includes(String(payload?.role || '').toLowerCase()),
     userId: Number(payload?.uid || 0) || null,
+    name: payload?.name || null,
     email: payload?.sub || null,
     mustResetPassword:
       mustResetFlag === null

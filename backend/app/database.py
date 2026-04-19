@@ -1,10 +1,14 @@
 from uuid import uuid4
+import logging
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
+
+
+logger = logging.getLogger(__name__)
 
 
 # Async engine
@@ -52,14 +56,51 @@ async def get_db() -> AsyncSession:
 async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        # Keep legacy databases compatible with auth fields used by signup/login.
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255)"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS company_name VARCHAR(255)"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS company_domain VARCHAR(255)"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS must_reset_password BOOLEAN DEFAULT false"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS created_by_id INTEGER"))
+
+        users_columns_result = await conn.execute(
+            text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema = 'public' AND table_name = 'users'"
+            )
+        )
+        users_columns = {str(row[0]) for row in users_columns_result.fetchall()}
+
+        tasks_columns_result = await conn.execute(
+            text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema = 'public' AND table_name = 'tasks'"
+            )
+        )
+        tasks_columns = {str(row[0]) for row in tasks_columns_result.fetchall()}
+
+        # Apply only missing legacy columns; avoid repeated ALTER work on every startup.
+        user_compat_columns = {
+            "email": "VARCHAR(255)",
+            "password_hash": "VARCHAR(255)",
+            "is_admin": "BOOLEAN DEFAULT false",
+            "company_name": "VARCHAR(255)",
+            "company_domain": "VARCHAR(255)",
+            "must_reset_password": "BOOLEAN DEFAULT false",
+            "created_by_id": "INTEGER",
+        }
+
+        for column_name, column_type in user_compat_columns.items():
+            if column_name in users_columns:
+                continue
+            logger.warning("Applying one-time users schema repair: adding column %s", column_name)
+            await conn.execute(text(f"ALTER TABLE users ADD COLUMN {column_name} {column_type}"))
+
+        task_compat_columns = {
+            "manual_priority_boost": "FLOAT DEFAULT 0.0",
+            "is_pinned": "BOOLEAN DEFAULT false",
+        }
+
+        for column_name, column_type in task_compat_columns.items():
+            if column_name in tasks_columns:
+                continue
+            logger.warning("Applying one-time tasks schema repair: adding column %s", column_name)
+            await conn.execute(text(f"ALTER TABLE tasks ADD COLUMN {column_name} {column_type}"))
+
         await conn.execute(
             text(
                 "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email_not_null "

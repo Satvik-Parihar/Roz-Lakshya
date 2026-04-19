@@ -83,7 +83,7 @@ function CreateTaskModal({ onClose }) {
 
   const filteredUsers = useMemo(() => {
     const query = assigneeSearch.trim().toLowerCase();
-    if (!query) return users.slice(0, 100);
+    if (!query) return users.slice(0, 1500);
 
     return users
       .filter((user) => {
@@ -92,7 +92,7 @@ function CreateTaskModal({ onClose }) {
         const idText = String(user.id);
         return name.includes(query) || email.includes(query) || idText.includes(query);
       })
-      .slice(0, 100);
+      .slice(0, 1500);
   }, [users, assigneeSearch]);
 
   const handle = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -257,6 +257,13 @@ const STATUS_FILTERS = [
 
 const normalizeStatus = (status) => String(status || 'todo').toLowerCase().replace(/_/g, '-');
 
+const PRIORITY_FILTERS = [
+  { value: 'all', label: 'All Priorities' },
+  { value: 'high', label: 'High' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'low', label: 'Low' },
+];
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function TaskBoard() {
   const { tasks, loading, error, fetchTasks } = useTaskStore();
@@ -264,30 +271,36 @@ export default function TaskBoard() {
   const isAdmin = Boolean(auth.isAdmin);
   const [showCreate, setShowCreate] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchTasks();
-    const interval = setInterval(fetchTasks, 20000);
-    return () => clearInterval(interval);
   }, [fetchTasks]);
 
   const filtered = tasks.filter((t) => {
     const matchesStatus = statusFilter === 'all' || normalizeStatus(t.status) === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || String(t.priority_label || '').toLowerCase() === priorityFilter;
     const q = search.toLowerCase();
     const matchesSearch =
       !q ||
       t.title?.toLowerCase().includes(q) ||
       t.assignee?.toLowerCase().includes(q) ||
       t.description?.toLowerCase().includes(q);
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesPriority && matchesSearch;
+  }).sort((a, b) => {
+    const ranks = { 'High': 3, 'Medium': 2, 'Low': 1 };
+    const rankA = ranks[a.priority_label] || 0;
+    const rankB = ranks[b.priority_label] || 0;
+    return sortOrder === 'desc' ? rankB - rankA : rankA - rankB;
   });
 
   return (
-    <div className="brand-page-bg min-h-screen">
+    <div className=" min-h-screen flex flex-col">
       <PriorityHeader appMode />
 
-      <main className="mx-auto w-full max-w-6xl space-y-6 px-3 py-6 sm:px-6 sm:py-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-3 py-6 sm:px-6 sm:py-10">
         <section className="stagger-enter rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-4 shadow-sm sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -299,15 +312,25 @@ export default function TaskBoard() {
                 {tasks.length} task{tasks.length !== 1 ? 's' : ''} prioritized by AI score.
               </p>
             </div>
-            {isAdmin && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowCreate(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-[color:var(--on-surface)] px-4 py-2 text-sm font-semibold text-[color:var(--surface-container-lowest)] transition-colors hover:bg-[color:var(--inverse-surface)]"
+                onClick={() => fetchTasks({ force: true })}
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-low)] px-4 py-2 text-sm font-semibold text-[color:var(--on-surface)] transition-colors hover:bg-[color:var(--surface-container)]"
               >
-                <span className="material-symbols-outlined text-base">add</span>
-                New Task
+                <span className="material-symbols-outlined text-base">refresh</span>
+                Refresh
               </button>
-            )}
+
+              {isAdmin && (
+                <button
+                  onClick={() => setShowCreate(true)}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-[color:var(--on-surface)] px-4 py-2 text-sm font-semibold text-[color:var(--surface-container-lowest)] transition-colors hover:bg-[color:var(--inverse-surface)]"
+                >
+                  <span className="material-symbols-outlined text-base">add</span>
+                  New Task
+                </button>
+              )}
+            </div>
           </div>
         </section>
 
@@ -341,6 +364,28 @@ export default function TaskBoard() {
               </button>
             ))}
           </div>
+
+          {/* Priority filter */}
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className="rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-1.5 text-xs font-semibold text-[color:var(--on-surface)] focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)] hover:bg-[color:var(--surface-container-low)] cursor-pointer"
+          >
+            {PRIORITY_FILTERS.map((f) => (
+              <option key={f.value} value={f.value}>{f.label}</option>
+            ))}
+          </select>
+
+          {/* Sort order toggle */}
+          <button
+            onClick={() => setSortOrder(v => v === 'desc' ? 'asc' : 'desc')}
+            className="inline-flex items-center gap-1 min-w-[140px] justify-center rounded-lg border border-[color:var(--outline-variant)] bg-[color:var(--surface-container-lowest)] px-3 py-1.5 text-xs font-semibold text-[color:var(--on-surface)] transition-colors hover:bg-[color:var(--surface-container-low)]"
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              {sortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward'}
+            </span>
+            Sort: Priority {sortOrder === 'desc' ? '(High→Low)' : '(Low→High)'}
+          </button>
         </div>
         </section>
 
@@ -353,7 +398,7 @@ export default function TaskBoard() {
               <p className="mt-0.5 text-xs text-rose-500">{error}</p>
             </div>
             <button
-              onClick={fetchTasks}
+              onClick={() => fetchTasks({ force: true })}
               className="ml-auto rounded-md bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-rose-700"
             >
               Retry

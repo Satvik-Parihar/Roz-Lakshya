@@ -84,7 +84,7 @@ export default function TaskCard({ task }) {
             {/* Assignee + score compact */}
             <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
               {task.assignee && <span>👤 {task.assignee}</span>}
-              <span>Score: <strong className="text-[color:var(--on-surface)]">{score}</strong></span>
+              <span>Score: <strong className="text-[color:var(--on-surface)]">{score.toFixed(2)}</strong></span>
             </div>
           </div>
 

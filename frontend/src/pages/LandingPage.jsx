@@ -22,10 +22,10 @@ const featureCards = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[color:var(--background)] text-[color:var(--on-background)]">
+    <div className="min-h-screen flex flex-col bg-transparent text-[color:var(--on-background)]">
       <PriorityHeader />
 
-      <main>
+      <main className="flex-1">
         <section className="relative overflow-hidden px-6 pb-24 pt-20">
           <div className="pointer-events-none absolute -left-24 top-10 h-56 w-56 rounded-full bg-sky-200/35 blur-3xl" />
           <div className="pointer-events-none absolute -right-16 bottom-0 h-64 w-64 rounded-full bg-lime-200/30 blur-3xl" />
@@ -97,7 +97,7 @@ export default function LandingPage() {
             <div className="mt-10 grid gap-6 md:grid-cols-3">
               {featureCards.map((card) => (
                 <article key={card.title} className="rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-6">
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface)]">
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-[color:var(--outline-variant)]/50 bg-transparent">
                     <span className="material-symbols-outlined text-[color:var(--primary-container)]">{card.icon}</span>
                   </div>
                   <h3 className="font-headline text-lg font-bold text-[color:var(--on-surface)]">{card.title}</h3>

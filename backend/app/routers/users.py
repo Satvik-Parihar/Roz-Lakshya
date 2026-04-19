@@ -61,6 +61,7 @@ def _create_user_login_response(user: User) -> LoginResponse:
         expires_delta=timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
         extra_payload={
             "uid": user.id,
+            "name": user.name,
             "role": response_role,
             "is_admin": bool(user.is_admin),
             "must_reset_password": bool(user.must_reset_password),
@@ -171,11 +172,11 @@ async def create_employee(
 
 @router.get("/", response_model=list[UserListItem])
 async def list_users(
-    limit: int = 500,
+    limit: int = 2000,
     db: AsyncSession = Depends(get_db),
     current_admin: User = Depends(require_admin),
 ):
-    safe_limit = max(1, min(limit, 2000))
+    safe_limit = max(1, min(limit, 10000))
 
     stmt = select(User)
     if current_admin.company_name:

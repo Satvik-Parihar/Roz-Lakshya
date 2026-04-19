@@ -28,10 +28,10 @@ const modules = [
 
 export default function ProductPage() {
   return (
-    <div className="min-h-screen bg-[color:var(--background)] text-[color:var(--on-background)]">
+    <div className="min-h-screen flex flex-col bg-transparent text-[color:var(--on-background)]">
       <PriorityHeader />
 
-      <main className="px-6 py-16">
+      <main className="flex-1 px-6 py-16">
         <div className="mx-auto w-full max-w-6xl">
           <p className="font-mono text-xs uppercase tracking-[0.22em] text-[color:var(--primary)]">Product Overview</p>
           <h1 className="mt-3 font-headline text-4xl font-bold tracking-tight text-[color:var(--on-surface)] md:text-5xl">
