@@ -101,9 +101,9 @@ export default function PriorityHeader({ appMode = false }) {
           onClick={(e) => authSnapshot.mustResetPassword ? e.preventDefault() : closeMenu()}
         >
           <img
-            src="/roz-lakshya-logo.webp"
+            src={authMode ? '/roz-lakshya-auth-logo.webp' : '/roz-lakshya-logo.webp'}
             alt=""
-            className="h-8 w-8 flex-shrink-0 rounded-md object-cover sm:h-9 sm:w-9"
+            className={`flex-shrink-0 object-contain ${authMode ? 'h-9 w-auto' : 'h-8 w-8 rounded-md object-cover sm:h-9 sm:w-9'}`}
           />
           <div className="leading-tight min-w-0">
             <span className="block truncate font-headline text-lg font-bold tracking-tight text-[color:var(--on-surface)] sm:text-xl">
