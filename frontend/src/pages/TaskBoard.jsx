@@ -291,7 +291,6 @@ export default function TaskBoard() {
         <section className="stagger-enter rounded-xl border border-[color:var(--outline-variant)]/50 bg-[color:var(--surface-container-lowest)] p-4 shadow-sm sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-mono text-xs uppercase tracking-widest text-[color:var(--primary)]">Execution Console</p>
               <h1 className="mt-1 text-2xl font-headline font-bold tracking-tight text-[color:var(--on-surface)] sm:text-3xl">
                 Task Board
               </h1>
