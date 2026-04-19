@@ -19,6 +19,7 @@ async def lifespan(app: FastAPI):
     # Startup
     try:
         await init_db()
+        """
         # Safe column migration for TS-13 admin priority override fields.
         async with engine.begin() as conn:
             await conn.execute(text("SET LOCAL statement_timeout = '120000ms'"))
@@ -87,6 +88,7 @@ async def lifespan(app: FastAPI):
                         await conn.execute(text(idx_stmt))
                 except Exception as exc:
                     logger.warning("Index creation failed: %s | %s", idx_stmt, exc)
+        """
         app.state.db_ready = True
     except Exception as exc:
         # Keep API bootable for non-DB routes (e.g. auth) when DB is temporarily unavailable.

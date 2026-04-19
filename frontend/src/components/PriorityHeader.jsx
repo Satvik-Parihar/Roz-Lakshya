@@ -90,15 +90,17 @@ export default function PriorityHeader({ appMode = false }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-[color:var(--outline-variant)]/60 bg-[color:var(--surface-container)]/95 shadow-sm backdrop-blur">
-      <div className="flex w-full items-center justify-between gap-4 px-4 py-4 md:grid md:grid-cols-[1fr_auto_1fr] md:px-8">
-        <Link to={appMode ? '/dashboard' : '/'} className="flex items-center gap-2" onClick={closeMenu}>
+      <div className="flex w-full max-w-full overflow-hidden items-center justify-between gap-2 px-3 py-4 md:grid md:grid-cols-[1fr_auto_1fr] md:gap-2 md:px-4 lg:gap-4 lg:px-8">
+        <Link to={appMode ? '/dashboard' : '/'} className="flex min-w-0 items-center gap-2" onClick={closeMenu}>
           <img
             src="/roz-lakshya-logo.webp"
-            alt="Roz-Lakshya logo"
-            className="h-9 w-9 rounded-md object-cover"
+            alt=""
+            className="h-8 w-8 flex-shrink-0 rounded-md object-cover sm:h-9 sm:w-9"
           />
-          <div className="leading-tight">
-            <span className="block font-headline text-xl font-bold tracking-tight text-[color:var(--on-surface)]">Roz-Lakshya</span>
+          <div className="leading-tight min-w-0">
+            <span className="block truncate font-headline text-lg font-bold tracking-tight text-[color:var(--on-surface)] sm:text-xl">
+              Roz-Lakshya
+            </span>
           </div>
         </Link>
 
